@@ -99,7 +99,9 @@ export function App() {
         <Route
           path="subscriptions/:id"
           element={
-            <RequireRole allow={INTERNAL}>
+            // Customers open their own subscriptions from the portal (pause / resume / renew,
+            // add-ons); the API enforces ownership and which transitions a customer may make.
+            <RequireRole allow={['ADMIN', 'STAFF', 'CUSTOMER']}>
               <SubscriptionDetailPage />
             </RequireRole>
           }
