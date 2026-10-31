@@ -5,13 +5,46 @@
  * VITE_USE_MOCK=false) swaps every call to the FastAPI backend with zero
  * component changes.
  */
-import type { AppNotification, DemoAccount, Role, SessionUser } from '@/types/contracts'
+import type {
+  AppNotification,
+  DemoAccount,
+  DiscountRule,
+  Plan,
+  Product,
+  ProductVariant,
+  ProductWithVariants,
+  QuotationTemplate,
+  QuotationTemplateDetail,
+  Role,
+  SessionUser,
+  TaxRule,
+} from '@/types/contracts'
 import * as live from './live.adapter'
 import * as mock from './mock.adapter'
-import type { LoginInput, ResetLinkResult, SignupInput } from './types'
+import type {
+  DiscountRuleInput,
+  LoginInput,
+  PlanInput,
+  ProductInput,
+  ProductVariantInput,
+  QuotationTemplateInput,
+  ResetLinkResult,
+  SignupInput,
+  TaxRuleInput,
+} from './types'
 
 export { ApiError } from './types'
-export type { LoginInput, SignupInput, ResetLinkResult } from './types'
+export type {
+  DiscountRuleInput,
+  LoginInput,
+  PlanInput,
+  ProductInput,
+  ProductVariantInput,
+  QuotationTemplateInput,
+  ResetLinkResult,
+  SignupInput,
+  TaxRuleInput,
+} from './types'
 
 export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false'
 
@@ -53,4 +86,126 @@ export function sessionForRole(role: Role): Promise<SessionUser> {
 
 export function resetDemoData(): Promise<void> {
   return route(() => mock.resetDemoData(), () => live.resetDemoData())
+}
+
+/* ------------------------------------------------------------------ */
+/* Catalog & rules                                                     */
+/* ------------------------------------------------------------------ */
+
+export function listProducts(): Promise<ProductWithVariants[]> {
+  return route(() => mock.listProducts(), () => live.listProducts())
+}
+
+export function createProduct(input: ProductInput): Promise<Product> {
+  return route(() => mock.createProduct(input), () => live.createProduct(input))
+}
+
+export function updateProduct(id: number, input: ProductInput): Promise<Product> {
+  return route(() => mock.editProduct(id, input), () => live.editProduct(id, input))
+}
+
+export function deleteProduct(id: number): Promise<void> {
+  return route(() => mock.removeProduct(id), () => live.removeProduct(id))
+}
+
+export function createProductVariant(
+  productId: number,
+  input: ProductVariantInput,
+): Promise<ProductVariant> {
+  return route(
+    () => mock.createProductVariant(productId, input),
+    () => live.createProductVariant(productId, input),
+  )
+}
+
+export function updateProductVariant(
+  id: number,
+  input: ProductVariantInput,
+): Promise<ProductVariant> {
+  return route(
+    () => mock.editProductVariant(id, input),
+    () => live.editProductVariant(id, input),
+  )
+}
+
+export function deleteProductVariant(id: number): Promise<void> {
+  return route(() => mock.removeProductVariant(id), () => live.removeProductVariant(id))
+}
+
+export function listPlans(): Promise<Plan[]> {
+  return route(() => mock.listPlans(), () => live.listPlans())
+}
+
+export function createPlan(input: PlanInput): Promise<Plan> {
+  return route(() => mock.createPlan(input), () => live.createPlan(input))
+}
+
+export function updatePlan(id: number, input: PlanInput): Promise<Plan> {
+  return route(() => mock.editPlan(id, input), () => live.editPlan(id, input))
+}
+
+export function deletePlan(id: number): Promise<void> {
+  return route(() => mock.removePlan(id), () => live.removePlan(id))
+}
+
+export function listTaxRules(): Promise<TaxRule[]> {
+  return route(() => mock.listTaxRules(), () => live.listTaxRules())
+}
+
+export function createTaxRule(input: TaxRuleInput): Promise<TaxRule> {
+  return route(() => mock.createTaxRule(input), () => live.createTaxRule(input))
+}
+
+export function updateTaxRule(id: number, input: TaxRuleInput): Promise<TaxRule> {
+  return route(() => mock.editTaxRule(id, input), () => live.editTaxRule(id, input))
+}
+
+export function deleteTaxRule(id: number): Promise<void> {
+  return route(() => mock.removeTaxRule(id), () => live.removeTaxRule(id))
+}
+
+export function listDiscountRules(): Promise<DiscountRule[]> {
+  return route(() => mock.listDiscountRules(), () => live.listDiscountRules())
+}
+
+export function createDiscountRule(input: DiscountRuleInput): Promise<DiscountRule> {
+  return route(() => mock.createDiscountRule(input), () => live.createDiscountRule(input))
+}
+
+export function updateDiscountRule(id: number, input: DiscountRuleInput): Promise<DiscountRule> {
+  return route(() => mock.editDiscountRule(id, input), () => live.editDiscountRule(id, input))
+}
+
+export function deleteDiscountRule(id: number): Promise<void> {
+  return route(() => mock.removeDiscountRule(id), () => live.removeDiscountRule(id))
+}
+
+export function listQuotationTemplates(): Promise<QuotationTemplateDetail[]> {
+  return route(() => mock.listQuotationTemplates(), () => live.listQuotationTemplates())
+}
+
+export function createQuotationTemplate(
+  input: QuotationTemplateInput,
+): Promise<QuotationTemplate> {
+  return route(
+    () => mock.createQuotationTemplate(input),
+    () => live.createQuotationTemplate(input),
+  )
+}
+
+export function updateQuotationTemplate(
+  id: number,
+  input: QuotationTemplateInput,
+): Promise<QuotationTemplate> {
+  return route(
+    () => mock.editQuotationTemplate(id, input),
+    () => live.editQuotationTemplate(id, input),
+  )
+}
+
+export function deleteQuotationTemplate(id: number): Promise<void> {
+  return route(
+    () => mock.removeQuotationTemplate(id),
+    () => live.removeQuotationTemplate(id),
+  )
 }

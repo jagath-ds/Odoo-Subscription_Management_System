@@ -107,6 +107,24 @@ export interface QuotationTemplateLine {
   quantity: number
 }
 
+/* ------------------------------------------------------------------ */
+/* Catalog projections — derived joins, never stored                   */
+/* ------------------------------------------------------------------ */
+
+export interface ProductWithVariants extends Product {
+  variants: ProductVariant[]
+}
+
+export interface QuotationTemplateLineDetail extends QuotationTemplateLine {
+  product_name: string
+  variant_name: string | null
+}
+
+export interface QuotationTemplateDetail extends QuotationTemplate {
+  plan_name: string
+  lines: QuotationTemplateLineDetail[]
+}
+
 export interface Subscription {
   id: number
   sub_number: string

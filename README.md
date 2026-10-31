@@ -14,7 +14,7 @@ dependencies are installed on your machine by the setup scripts below.
 | --- | --- | --- |
 | 1 | Blueprint & contracts (`docs/Phase-1-Blueprint.pdf`) | Done |
 | 2 | App shell, authentication, role-aware navigation, routing | **Done** |
-| 3 | Subscriptions, plans, products, discounts, dashboards | Placeholder routes |
+| 3 | Catalog & rules studio, subscriptions, quotations | **In progress** — catalog done, subscriptions next |
 | 4 | Billing Day, invoices, payments, portal data | Placeholder routes |
 | 5 | Analytics, polish, live API wiring | Placeholder routes |
 
@@ -108,8 +108,8 @@ Components never import mock data directly — they call `services/api.ts` only.
 
 * **React 18** + **Vite 8** + **TypeScript 7** (strict, no `any`)
 * **Tailwind CSS v4** + `tw-animate-css`, **shadcn/ui** on Base UI primitives
-* **lucide-react** icons, **Recharts** charts (Phase 3), **next-themes** (dark default)
-* **date-fns** dates (`YYYY-MM-DD` everywhere), **TanStack Table** + **react-window** (Phase 3/4)
+* **lucide-react** icons, **Recharts** charts (Phase 5), **next-themes** (dark default)
+* **date-fns** dates (`YYYY-MM-DD` everywhere), **TanStack Table** + **react-window** (Phase 4/5)
 * **sonner** toasts, **cmdk** command palette (`Ctrl/Cmd + K`)
 
 Money is formatted with `Intl.NumberFormat('en-IN')` (INR, 2 decimals, half-up rounding at line level).
@@ -157,4 +157,30 @@ Run inside `frontend/`:
 * Role-aware sidebar + top bar, `RequireAuth` / `RequireRole` route guards, 403 and 404 pages.
 * Session persists across reloads (`sessionStorage`), sign-out and demo reset clear it.
 * Command palette, notification popover with unread badge, theme toggle, role switcher.
-* Dashboard preview KPIs (clearly badged **Preview data**); analytics arrive in Phase 3.
+* Dashboard preview KPIs (clearly badged **Preview data**); analytics arrive in Phase 5.
+
+---
+
+## Phase 3 coverage (in progress)
+
+### Admin Catalog & Rules Studio — done
+
+* **Products & Variants** — CRUD, `SERVICE` / `ADDON`, base and cost price, price-extra
+  variants (e.g. Brand: Enterprise **+₹560**), active toggle, expandable variant rows.
+* **Plans** — billing frequency, plan price, minimum quantity, availability window and
+  the four permission toggles (`auto_close`, `can_close_early`, `can_pause`, `can_renew`).
+* **Tax Rules** — rate with active state; edits never rewrite issued invoice snapshots.
+* **Discount Rules** — percent / fixed, product / subscription scope, minimum quantity,
+  minimum purchase, validity window, usage limit and a derived Active / Scheduled /
+  Expired / Exhausted state.
+* **Quotation Templates** — plan, quote validity and a multi-line product / variant editor.
+* Shared `DataTable`, `FormDialog`, `Field` and `ListToolbar` primitives with loading,
+  empty and error states; tables scroll horizontally on mobile without page overflow.
+* Referential guards: products or plans used by a quotation template cannot be deleted.
+* All catalog calls go through `services/api.ts`; the mock store is seeded with 6 products,
+  7 variants, 6 plans, 5 tax rules, 5 discount rules and 4 templates.
+
+### Subscriptions & quotations — next
+
+Subscription list and detail, the status ribbon, permission-gated pause / resume / close /
+renew, create-from-template, and the staff team page.

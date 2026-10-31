@@ -1,4 +1,5 @@
 import type { AppNotification, SessionUser } from '@/types/contracts'
+import { resetCatalogDb } from './catalogDb'
 import { DEMO_TODAY, DEMO_USERS, demoUserForRole, seedNotifications, type DemoUser } from './fixtures'
 
 /**
@@ -62,4 +63,5 @@ export function resetMockDb(): void {
   users = DEMO_USERS.map((user) => ({ ...user }))
   notifications = seedNotifications()
   nextUserId = 100
+  resetCatalogDb()
 }

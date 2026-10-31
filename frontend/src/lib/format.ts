@@ -38,6 +38,11 @@ export function formatPercent(value: number, fractionDigits = 0): string {
   return `${value.toFixed(fractionDigits)}%`
 }
 
+/** Round half-up to paise. Used at line level before totals are summed. */
+export function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
 export function initials(name: string): string {
   return name
     .split(' ')
