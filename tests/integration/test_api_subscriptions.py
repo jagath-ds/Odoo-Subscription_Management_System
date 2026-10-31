@@ -15,7 +15,7 @@ def _line(sub, product_name):
 # quotations & pricing
 def test_template_quote_prefills_plan_lines_variant_discount_and_tax(api):
     quote = api.quote_from_template(api.new_customer().id)
-    assert quote["status"] == "QUOTATION" and quote["plan_name"] == "Annual Enterprise Plan"
+    assert quote["status"] == "DRAFT" and quote["plan_name"] == "Annual Enterprise Plan"
     assert quote["sub_number"].startswith("SUB-")
     erp = _line(quote, ERP)
     assert erp["variant_name"] == "Brand: Odoo" and erp["quantity"] == 10
@@ -95,6 +95,7 @@ def test_expired_quotation_cannot_be_confirmed(api, db):
     from backend.core.models import Subscription
 
     quote = api.quote_from_template(api.new_customer().id)
+    api.advance(quote["id"], "QUOTATION")
     db.get(Subscription, quote["id"]).quotation_valid_until = date.today() - timedelta(days=1)
     db.commit()
     response = api.transition(quote["id"], "CONFIRMED")
@@ -108,7 +109,7 @@ def test_quotation_can_be_confirmed_on_its_last_valid_day(api, db):
     quote = api.quote_from_template(api.new_customer().id)
     db.get(Subscription, quote["id"]).quotation_valid_until = date.today()
     db.commit()
-    assert api.advance(quote["id"], "CONFIRMED")["status"] == "CONFIRMED"
+    assert api.advance(quote["id"], "QUOTATION", "CONFIRMED")["status"] == "CONFIRMED"
 
 
 # plan permissions, pause / resume, close / renew

@@ -273,7 +273,7 @@ export function runBillingDayBatch(todayStr: DateStr): BillingRunReport {
       sub_number: sub.sub_number,
       customer_name: detail.customer_name,
       billing_period_key: periodKey,
-      status: 'CONFIRMED',
+      status: 'DRAFT',
       issue_date: todayStr,
       due_date: dueDate,
       is_overdue: false,

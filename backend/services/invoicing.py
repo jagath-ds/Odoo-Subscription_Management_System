@@ -149,7 +149,7 @@ def run_billing_day(db: Session, today: date) -> dict:
                     auto_closed += 1
                 elif action == "BILL":
                     invoice = build_invoice(
-                        db, sub, verdict["billing_period_key"], today, status=InvoiceStatus.CONFIRMED,
+                        db, sub, verdict["billing_period_key"], today, status=InvoiceStatus.DRAFT,
                     )
                     sub.next_billing_date = date.fromisoformat(verdict["next_billing_date"])
                     db.flush()

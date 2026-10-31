@@ -172,7 +172,7 @@ class Api:
 
     def active_from_template(self, customer_id):
         quote = self.quote_from_template(customer_id)
-        return self.advance(quote["id"], "CONFIRMED", "ACTIVE")
+        return self.advance(quote["id"], "QUOTATION", "CONFIRMED", "ACTIVE")
 
     def active_monthly(self, customer_id, quantity=1, plan=None):
         lines = [{"product_id": self.catalog.erp["id"], "variant_id": self.catalog.odoo["id"], "quantity": quantity}]

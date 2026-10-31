@@ -271,9 +271,9 @@ All demo accounts use the password **`Brightloop@123`**.
 
 1. **Admin → Dashboard:** KPIs, overdue chase list and the ⚡ query-time badge.
 2. **Catalog:** the Odoo variant (+560), plan flags, GST 18% and the 10% bulk-seat discount.
-3. **Staff → New quotation from template** *Enterprise Annual Offer*: 10 × ₹2,560, 10% off, 18% GST are filled in automatically. Move it Quotation → Confirmed → Active on the status ribbon.
-4. **Billing Day → Run Billing Day:** SUB-DEMO-0005 is invoiced and SUB-DEMO-0006 is auto-closed. Run it again: nothing is billed twice.
-5. **Invoice → Record payment:** pay part (PARTIALLY_PAID), then the rest (PAID). Print it.
+3. **Staff → New quotation from template** *Enterprise Annual Offer*: 10 × ₹2,560, 10% off, 18% GST are filled in automatically. Move it Draft → Quotation → Confirmed → Active with the action buttons.
+4. **Billing Day → Run Billing Day:** SUB-DEMO-0005 gets a Draft invoice and SUB-DEMO-0006 is auto-closed. Run it again: nothing is billed twice.
+5. **Invoice → Confirm**, then **Record payment:** pay part (PARTIALLY_PAID), then the rest (PAID). Print it.
 6. **Customer portal** (`customer@brightloop.local`): switch the WhatsApp add-on, pause and resume (billing dates shift by the paused days).
 7. **Sign-up** with `Short@1a` is rejected (needs more than 8 characters). **Forgot password** prints the reset link in the API console.
 

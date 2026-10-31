@@ -274,7 +274,7 @@ export function createSubscriptionFromTemplate(
     customer_id: input.customer_id,
     plan_id: template.plan_id,
     discount_id: null,
-    status: 'CONFIRMED',
+    status: 'DRAFT',
     start_date: startDate,
     next_billing_date: nextBilling,
     expiry_date: expiryDate,

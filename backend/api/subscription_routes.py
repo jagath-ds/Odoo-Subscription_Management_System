@@ -206,7 +206,7 @@ def create_from_template(payload: CreateFromTemplate, db: Session = Depends(get_
     sub = _new_subscription(
         payload.customer_id, plan, payload.start_date, _default_expiry(plan, payload.start_date),
         payload.payment_terms_days if payload.payment_terms_days is not None else 30,
-        None, SubscriptionStatus.QUOTATION, template.validity_days,
+        None, SubscriptionStatus.DRAFT, template.validity_days,
     )
     sub.lines = _build_lines(db, plan, raw_lines)
     db.add(sub)

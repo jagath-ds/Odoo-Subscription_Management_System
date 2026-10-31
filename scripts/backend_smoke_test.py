@@ -72,14 +72,14 @@ print("\n3. Quotation from template -> lifecycle")
 start = date.today().isoformat()
 sub = call("POST", "/api/subscriptions/from-template", staff, expected=201,
            json={"template_id": template["id"], "customer_id": customer_id, "start_date": start})
-check("starts as QUOTATION", sub["status"] == "QUOTATION")
+check("starts as DRAFT", sub["status"] == "DRAFT")
 check("unit price = 2000 + 560", sub["lines"][0]["unit_price"] == 2560)
 erp_line = sub["lines"][0]
 check("10% bulk discount applied (qty 10)", erp_line["discount_applied"] and erp_line["discount_amount"] == 2560.0)
 check("18% GST on discounted amount", erp_line["tax_amount"] == round(23040 * 0.18, 2))
 sid = sub["id"]
 call("POST", f"/api/subscriptions/{sid}/transition", staff, expected=409, json={"target_status": "ACTIVE"})
-for target in ("CONFIRMED", "ACTIVE"):
+for target in ("QUOTATION", "CONFIRMED", "ACTIVE"):
     sub = call("POST", f"/api/subscriptions/{sid}/transition", staff, json={"target_status": target})
 check("now ACTIVE", sub["status"] == "ACTIVE")
 call("POST", f"/api/subscriptions/{sid}/transition", customer_token, expected=409, json={"target_status": "CLOSED"})
@@ -94,7 +94,8 @@ check("second run bills nothing for it", not any(d["sub_number"] == sub["sub_num
 invoices = call("GET", f"/api/invoices?subscription_id={sid}", staff)
 check("exactly one invoice", len(invoices) == 1, invoices)
 inv = call("GET", f"/api/invoices/{invoices[0]['id']}", customer_token)
-check("invoice CONFIRMED with snapshot lines", inv["status"] == "CONFIRMED" and len(inv["lines"]) == 2)
+check("invoice DRAFT with snapshot lines", inv["status"] == "DRAFT" and len(inv["lines"]) == 2)
+inv = call("POST", f"/api/invoices/{inv['id']}/confirm", staff)
 
 print("\n5. Payments (partial -> paid)")
 half = round(inv["grand_total"] / 2, 2)

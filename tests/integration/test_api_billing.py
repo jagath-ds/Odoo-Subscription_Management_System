@@ -119,7 +119,7 @@ def test_billing_day_bills_each_due_subscription_exactly_once(api):
     assert len(mine) == 1 and mine[0]["action"] == "BILL"
     assert mine[0]["period_key"] == f"{sub['sub_number']}:{today}" and mine[0]["amount"] == pytest.approx(27541.2)
     invoices = _invoices_for(api, sub["id"])
-    assert len(invoices) == 1 and invoices[0]["status"] == "CONFIRMED"
+    assert len(invoices) == 1 and invoices[0]["status"] == "DRAFT"  # staff confirm it next
 
     second = api.c.post("/api/billing/batch", headers=api.staff, json={"today": today}).json()
     assert not any(d["sub_number"] == sub["sub_number"] and d["action"] == "BILL" for d in second["decisions"])
