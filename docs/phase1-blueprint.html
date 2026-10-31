@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Subscription Management System — Phase 1 Blueprint</title>
+<style>
+  @page { size: A4; margin: 15mm 13mm 16mm 13mm; }
+
+  :root {
+    --ink: #0d1526;
+    --body: #26324a;
+    --muted: #5b6880;
+    --line: #dde3ec;
+    --line-soft: #eef1f6;
+    --accent: #0f9d76;
+    --accent-deep: #0a7357;
+    --accent-wash: #effaf5;
+    --code-bg: #0e1626;
+    --code-fg: #dbe4f0;
+    --warn: #b45309;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Inter, -apple-system, system-ui, sans-serif;
+    font-size: 10pt;
+    line-height: 1.55;
+    color: var(--body);
+    background: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- COVER ---------- */
+  .cover { min-height: 258mm; display: flex; flex-direction: column; page-break-after: always; }
+  .cover-top { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .02em; color: var(--ink); font-size: 10pt; }
+  .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .cover-top .doc-type { font-size: 8pt; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .cover-main { margin-top: auto; margin-bottom: auto; padding: 20mm 0 14mm; }
+  .eyebrow {
+    display: inline-block; font-size: 8pt; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent-deep); background: var(--accent-wash); border: 1px solid #cdeee1;
+    padding: 5px 10px; border-radius: 999px; margin-bottom: 18px;
+  }
+  h1.title { font-size: 33pt; line-height: 1.08; margin: 0 0 12px; color: var(--ink); letter-spacing: -.025em; font-weight: 700; }
+  .tagline { font-size: 13.5pt; color: var(--muted); margin: 0 0 26px; max-width: 150mm; line-height: 1.45; }
+  .rule { width: 62mm; height: 3px; background: var(--accent); border-radius: 2px; margin-bottom: 22px; }
+  .cover-lede { font-size: 10.5pt; max-width: 152mm; color: var(--body); }
+
+  .meta-grid {
+    margin-top: 26mm; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border-top: 1px solid var(--line); border-left: 1px solid var(--line);
+  }
+  .meta-cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 9px 12px; }
+  .meta-cell .k { font-size: 7.4pt; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 3px; }
+  .meta-cell .v { font-size: 9.6pt; color: var(--ink); font-weight: 600; }
+
+  /* ---------- STRUCTURE ---------- */
+  .section { break-before: auto; margin-top: 16mm; }
+  .section.first { margin-top: 0; }
+
+  h2 {
+    font-size: 17pt; line-height: 1.2; color: var(--ink); margin: 0 0 4px; letter-spacing: -.015em;
+    padding-left: 12px; border-left: 4px solid var(--accent); font-weight: 700;
+    break-after: avoid; page-break-after: avoid; break-before: avoid; page-break-before: avoid;
+  }
+  .sec-num { display: block; font-size: 7.6pt; letter-spacing: .18em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; margin-bottom: 6px; padding-left: 12px; break-after: avoid; page-break-after: avoid; }
+  h2 + .lede { color: var(--muted); font-size: 9.6pt; margin: 8px 0 16px; padding-left: 12px; max-width: 165mm; break-after: avoid; page-break-after: avoid; }
+
+  h3 { font-size: 11pt; color: var(--ink); margin: 18px 0 7px; font-weight: 700; letter-spacing: -.005em; break-after: avoid; page-break-after: avoid; }
+  h4 { font-size: 9.4pt; color: var(--accent-deep); margin: 14px 0 5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+
+  p { margin: 0 0 9px; }
+  ul, ol { margin: 0 0 10px; padding-left: 17px; }
+  li { margin-bottom: 3px; }
+  strong { color: var(--ink); font-weight: 600; }
+  code.inline { font-family: "Cascadia Mono", Consolas, monospace; font-size: 8.6pt; background: #f2f5f9; border: 1px solid var(--line-soft); padding: 1px 4px; border-radius: 3px; color: #12324a; }
+
+  /* ---------- TABLES ---------- */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 8px 0 14px; font-size: 8.5pt; break-inside: auto; }
+  thead { display: table-header-group; }
+  th {
+    text-align: left; font-size: 7.4pt; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-deep);
+    background: #f4f8f6; border-bottom: 1.5px solid #c9e5da; padding: 7px 8px; font-weight: 700;
+  }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--body); }
+  tbody tr:nth-child(even) td { background: #fbfcfd; }
+  tr { break-inside: avoid; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .mono { font-family: "Cascadia Mono", Consolas, monospace; font-size: 7.7pt; color: #1c3a52; white-space: normal; overflow-wrap: anywhere; }
+  .yes { color: var(--accent-deep); font-weight: 700; }
+
+  /* ---------- CODE ---------- */
+  pre {
+    background: var(--code-bg); color: var(--code-fg); border-radius: 6px; padding: 10px 12px;
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 7.5pt; line-height: 1.5;
+    white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 14px; break-inside: auto;
+    border: 1px solid #1c2740;
+  }
+  pre .c { color: #7d8ca8; }
+  pre .k { color: #7fd8b8; }
+  pre .s { color: #f0c98a; }
+  pre.tree { font-size: 7.1pt; line-height: 1.38; break-inside: auto; }
+
+  /* ---------- CALLOUTS ---------- */
+  .callout {
+    border: 1px solid #cdeee1; background: var(--accent-wash); border-left: 3px solid var(--accent);
+    padding: 9px 12px; border-radius: 0 5px 5px 0; margin: 10px 0 14px; break-inside: avoid;
+  }
+  .callout .h { font-size: 7.6pt; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-deep); font-weight: 700; margin-bottom: 3px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .note { border: 1px solid #f0e0c8; background: #fffaf1; border-left: 3px solid var(--warn); padding: 9px 12px; border-radius: 0 5px 5px 0; margin: 10px 0 14px; font-size: 9pt; break-inside: avoid; }
+
+  /* ---------- MISC ---------- */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 14px; }
+  .kpi { border: 1px solid var(--line); border-radius: 5px; padding: 8px 9px; background: #fff; }
+  .kpi .l { font-size: 7pt; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .kpi .v { font-size: 10pt; font-weight: 700; color: var(--ink); margin-top: 3px; }
+
+  .flow { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 14px; }
+  .flow span {
+    font-size: 7.6pt; font-weight: 600; border: 1px solid #c9e5da; background: #f4f8f6;
+    color: var(--accent-deep); padding: 4px 8px; border-radius: 3px;
+  }
+  .flow .arrow { border: none; background: none; color: #9aa8bd; padding: 4px 0; }
+
+  .end { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 8pt; color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tight li { margin-bottom: 1px; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .avoid { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="brand"><span class="dot"></span> BRIGHTLOOP SOFTWARE</div>
+    <div class="doc-type">Phase 1 · Blueprint · No Code</div>
+  </div>
+
+  <div class="cover-main">
+    <span class="eyebrow">Hackathon · Frontend UI · Member 3</span>
+    <h1 class="title">Subscription<br />Management System</h1>
+    <p class="tagline">Build one system to run plans, subscriptions and recurring billing in one place.</p>
+    <div class="rule"></div>
+    <p class="cover-lede">
+      A unified platform for the full life of a subscription business: products and plans, quotations to
+      subscriptions, automatic billing-day invoicing, discounts, payments and live revenue reporting —
+      running on deterministic mock data today and swapping to the FastAPI + PostgreSQL API with a
+      one-file change.
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-cell"><span class="k">Document</span><span class="v">Phase 1 — Blueprint</span></div>
+      <div class="meta-cell"><span class="k">Owner</span><span class="v">Member 3 — Frontend UI</span></div>
+      <div class="meta-cell"><span class="k">Stack</span><span class="v">React 18 · Vite · TypeScript · Tailwind · shadcn/ui</span></div>
+      <div class="meta-cell"><span class="k">Data</span><span class="v">2,000 subscriptions · 6,000 invoices</span></div>
+      <div class="meta-cell"><span class="k">Currency</span><span class="v">INR (₹) · Intl.NumberFormat("en-IN")</span></div>
+      <div class="meta-cell"><span class="k">Status</span><span class="v">Ready for Phase 2 — Shell &amp; Layout</span></div>
+    </div>
+  </div>
+
+  <div class="end" style="border-top:1px solid var(--line); padding-top:8px;">
+    Contents — Dependencies · Five critical views · Finance dashboard · Wow feature · TypeScript contracts ·
+    Engine · Store · API surface · File tree · Edge cases · Demo story · Open questions
+  </div>
+</div>
+
+<!-- ============ 1 ============ -->
+<div class="section first">
+  <span class="sec-num">Section 01</span>
+  <h2>Dependency plan</h2>
+  <p class="lede">Run before Phase 2. Every package below is used; nothing speculative is installed.</p>
+
+  <pre><span class="c"># scaffold</span>
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+
+<span class="c"># runtime</span>
+npm install react-router-dom date-fns next-themes recharts lucide-react clsx tailwind-merge \
+  class-variance-authority tailwindcss-animate tw-animate-css @tanstack/react-table \
+  react-window @types/react-window sonner
+
+<span class="c"># tooling</span>
+npm install -D tailwindcss postcss autoprefixer @types/node
+npx tailwindcss init -p
+npx shadcn@latest init</pre>
+
+  <pre>npx shadcn@latest add button input label card table badge dialog sheet drawer popover \
+  command tabs select slider switch checkbox textarea tooltip dropdown-menu separator avatar \
+  skeleton alert alert-dialog calendar form progress scroll-area sonner chart breadcrumb \
+  collapsible toggle-group</pre>
+
+  <div class="note">
+    <strong>Choices worth defending.</strong> <code class="inline">sonner</code> supplies toasts (shadcn's
+    <code class="inline">toast</code> is deprecated). <code class="inline">chart</code> is the shadcn Recharts
+    wrapper, so all data-viz shares one theme. <code class="inline">react-window</code> is the fallback if
+    TanStack pagination struggles with 6,000 invoices on the demo laptop — it is a swap, not a rewrite.
+  </div>
+</div>
+
+<!-- ============ 2 ============ -->
+<div class="section">
+  <span class="sec-num">Section 02</span>
+  <h2>The five critical views</h2>
+  <p class="lede">Named in problem-statement vocabulary so the demo narration and the UI never drift apart.</p>
+
+  <table>
+    <thead>
+      <tr><th style="width:4%">#</th><th style="width:22%">View</th><th style="width:36%">Vocabulary</th><th style="width:26%">Routes</th><th style="width:12%">Role</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="num">1</td>
+        <td><strong>Auth &amp; Role Shell</strong></td>
+        <td>Signup/Auth, Role (ADMIN / STAFF / CUSTOMER), password policy, Forgot-Password reset link</td>
+        <td class="mono">/login /signup /forgot-password</td>
+        <td>Public → all</td>
+      </tr>
+      <tr>
+        <td class="num">2</td>
+        <td><strong>Admin Catalog &amp; Rules Studio</strong></td>
+        <td>Products &amp; Variants, Plans with Auto-Close / Early Close / Pause / Renew toggles, Tax Rules, Discount Rules, Quotation Templates, Add Staff</td>
+        <td class="mono">/catalog/* /team</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td class="num">3</td>
+        <td><strong>Staff Subscription &amp; Quotation ERP</strong></td>
+        <td>Quotation Template → Create from Template, Subscription number, status chevron ribbon, order lines, Payment Terms, Renewal</td>
+        <td class="mono">/subscriptions /subscriptions/:id /quotations/new</td>
+        <td>ADMIN + STAFF</td>
+      </tr>
+      <tr>
+        <td class="num">4</td>
+        <td><strong>Billing Day, Invoice &amp; Payment</strong></td>
+        <td>Run Billing Day Batch, Simulate Billing Date, Invoice (snapshot lines, taxes, totals), Record Payment, Paid vs Outstanding, Overdue chase</td>
+        <td class="mono">/billing /invoices /invoices/:id /payments</td>
+        <td>ADMIN + STAFF</td>
+      </tr>
+      <tr>
+        <td class="num">5</td>
+        <td><strong>Customer Portal &amp; Finance Lead Dashboard</strong></td>
+        <td>Active Subscriptions, MRR Collected, Total Outstanding, Overdue Invoices, revenue collected, filters + summary view</td>
+        <td class="mono">/dashboard /portal /portal/*</td>
+        <td>Finance: ADMIN (full) + STAFF (read-only + chase)<br />Portal: CUSTOMER</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Route × role matrix</h3>
+  <table>
+    <thead><tr><th style="width:52%">Route</th><th class="num">ADMIN</th><th class="num">STAFF</th><th class="num">CUSTOMER</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">/login /signup /forgot-password</td><td class="num yes">●</td><td class="num yes">●</td><td class="num yes">●</td></tr>
+      <tr><td class="mono">/dashboard <span class="small">— Finance Lead</span></td><td class="num">full</td><td class="num">read-only + chase</td><td class="num">—</td></tr>
+      <tr><td class="mono">/catalog/products /catalog/plans /catalog/tax-rules</td><td class="num yes">●</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td class="mono">/catalog/discount-rules /catalog/quotation-templates</td><td class="num yes">●</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td class="mono">/team <span class="small">— Add Staff Member</span></td><td class="num yes">●</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td class="mono">/subscriptions /subscriptions/:id</td><td class="num yes">●</td><td class="num yes">●</td><td class="num">—</td></tr>
+      <tr><td class="mono">/quotations/new</td><td class="num yes">●</td><td class="num yes">●</td><td class="num">—</td></tr>
+      <tr><td class="mono">/billing</td><td class="num yes">●</td><td class="num yes">●</td><td class="num">—</td></tr>
+      <tr><td class="mono">/invoices /invoices/:id /payments</td><td class="num yes">●</td><td class="num yes">●</td><td class="num">—</td></tr>
+      <tr><td class="mono">/portal /portal/subscriptions/:id /portal/invoices/:id</td><td class="num">any</td><td class="num">any</td><td class="num">own only</td></tr>
+      <tr><td class="mono">/</td><td class="num">→ /dashboard</td><td class="num">→ /dashboard</td><td class="num">→ /portal</td></tr>
+    </tbody>
+  </table>
+
+  <p class="small">
+    <code class="inline">&lt;RequireRole allow={['ADMIN','STAFF']}&gt;</code> wraps every non-public route. A CUSTOMER
+    deep-linking to <code class="inline">/invoices/12</code> gets a "Not your invoice" guard screen — not a 404.
+  </p>
+
+  <h3>Navigation labels</h3>
+  <div class="flow">
+    <span>Revenue</span><span class="arrow">·</span>
+    <span>Finance Lead Dashboard</span><span>Billing Day</span><span>Revenue Insights</span>
+    <span class="arrow">·</span><span>Subscriptions</span>
+    <span>Subscriptions</span><span>Quotations</span><span>Renewals Due</span>
+    <span class="arrow">·</span><span>Billing</span>
+    <span>Invoices</span><span>Payments</span><span>Overdue</span>
+    <span class="arrow">·</span><span>Studio</span>
+    <span>Products &amp; Variants</span><span>Plans</span><span>Tax Rules</span><span>Discount Rules</span><span>Quotation Templates</span>
+    <span class="arrow">·</span><span>Team</span><span>Staff Members</span>
+    <span class="arrow">·</span><span>Portal</span><span>My Subscriptions</span><span>My Invoices</span>
+  </div>
+</div>
+
+<!-- ============ 3 ============ -->
+<div class="section">
+  <span class="sec-num">Section 03</span>
+  <h2>Finance Lead Dashboard</h2>
+  <p class="lede">The 10-second test: how many subscriptions are active, how much came in, how much is owed, what is overdue.</p>
+
+  <h3>KPI cards</h3>
+  <p>Each card carries current value, target, <code class="inline">% change</code> with a directional arrow, a sparkline, an
+  <code class="inline">animate-in fade-in slide-in-from-bottom-2</code> entrance and a count-up animation that respects
+  <code class="inline">prefers-reduced-motion</code>.</p>
+
+  <table>
+    <thead><tr><th style="width:26%">Card</th><th style="width:26%">Field</th><th style="width:26%">Target baseline</th><th style="width:22%">% change vs</th></tr></thead>
+    <tbody>
+      <tr><td>Active Subscriptions</td><td class="mono">active_subscriptions_count</td><td>seeded target · 1,850</td><td>previous simulated day</td></tr>
+      <tr><td>MRR Collected</td><td class="mono">mrr_collected</td><td>quarter target · ₹48,00,000</td><td>previous billing cycle</td></tr>
+      <tr><td>Total Outstanding</td><td class="mono">total_outstanding_owed</td><td>≤ ₹5,00,000 healthy band</td><td>previous cycle</td></tr>
+      <tr><td>Overdue Invoices</td><td class="mono">overdue_invoices_count</td><td>0</td><td>previous cycle</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="h">Query Time badge</div>
+    <p>Top-right of the header: <strong>Query Time: 42 ms</strong>. In mock mode it is measured with
+    <code class="inline">performance.now()</code> around the selector; in live mode it reads
+    <code class="inline">query_time_ms</code> from Contract C. Green &lt; 200 ms, amber &lt; 800 ms, red ≥ 800 ms —
+    this makes the 2-second SLA visible to judges instead of merely claimed.</p>
+  </div>
+
+  <h3>Overdue chase table</h3>
+  <p><strong>Columns</strong> — Invoice #, Customer, Amount Due, Due Date, Days Overdue (severity pill), Status, and actions
+  <em>View</em> / <em>Send Reminder</em> / <em>Record Payment</em>.<br />
+  <strong>Filters</strong> — due-date range, status (All / Overdue / Partially Paid / Confirmed), debounced customer search
+  (250 ms), sort by days overdue. Pagination 25 / 50 / 100 through TanStack Table.</p>
+
+  <h3>Charts (Recharts via shadcn chart)</h3>
+  <ol class="tight">
+    <li><strong>MRR vs Outstanding</strong> — dual-series area across 12 simulated periods, live-updates after a billing run.</li>
+    <li><strong>Revenue Collected vs Outstanding</strong> — stacked bar by Billing Frequency.</li>
+    <li><strong>Invoice status mix</strong> — donut: Draft / Confirmed / Partially Paid / Paid / Cancelled.</li>
+    <li><strong>Renewals due next 30 days</strong> — compact horizontal bar.</li>
+  </ol>
+
+  <h3>Interactive control panels</h3>
+  <ul>
+    <li><strong>What-if Revenue Calculator</strong> — plan select, billing frequency, quantity slider (1–200), discount-rule
+      toggle, tax-rule select; recomputes through <code class="inline">calculateLineItem</code> and instantly updates the
+      projected MRR vs outstanding chart.</li>
+    <li><strong>Run Revenue Insights</strong> (mock AI, 1.5 s spinner) — three urgency-bordered alerts: green (a discount rule
+      auto-applied to upcoming invoices), yellow (renewals expiring within 7 days), red (overdue invoices at risk). Each has a
+      working <em>Apply</em>.</li>
+    <li><strong>Billing Day simulator shortcut</strong> — deep-links to <code class="inline">/billing</code> with the clock pre-advanced.</li>
+  </ul>
+</div>
+
+<!-- ============ 4 ============ -->
+<div class="section">
+  <span class="sec-num">Section 04</span>
+  <h2>The standout “wow” feature</h2>
+  <p class="lede">Billing Day Time-Travel Simulator — kept from the default proposal, sharpened so it proves the two hardest invariants.</p>
+
+  <div class="callout">
+    <div class="h">Why it beats the alternatives</div>
+    <p>It <em>is</em> the core feature, its effect is measurable live in front of judges, and it proves idempotency and
+    snapshot immutability rather than describing them. An AI copilot panel would demo conversation, not correctness.</p>
+  </div>
+
+  <h3>What it does</h3>
+  <ol>
+    <li><strong>Simulate Billing Date</strong> picker. <code class="inline">today</code> lives in the global store, so every page's
+      overdue logic and <code class="inline">is_overdue</code> recompute together.</li>
+    <li><strong>Run Billing Day Batch</strong> animates a five-stage pipeline:
+      <em>Due subscriptions found (n)</em> → <em>Discount check</em> → <em>Tax computation</em> →
+      <em>Invoice created</em> → <em>Invoice sent</em>, each stage ticking with
+      <code class="inline">animate-in fade-in slide-in-from-bottom-2</code>.</li>
+    <li>Live KPI deltas: MRR ↑, Outstanding ↑, Overdue ↓ after reminders.</li>
+    <li><strong>Press Run again</strong> — every record returns SKIP with
+      <code class="inline">billing_period_key already exists</code> and the toast reads
+      <em>“0 invoices created · 37 already billed — nothing billed twice.”</em></li>
+    <li>A <strong>Run Ledger</strong> panel lists every decision (BILL / SKIP / AUTO_CLOSE + reason), so the idempotency
+      proof is auditable rather than a single toast.</li>
+    <li><strong>Time-travel +1 month</strong> — renewals advance with real <code class="inline">addMonths</code> math
+      (Jan 31 → Feb 28) and auto-close fires on <code class="inline">expiry_date</code> when <code class="inline">auto_close</code> is true.</li>
+  </ol>
+
+  <h3>Pipeline contract</h3>
+  <div class="flow">
+    <span>Due subscriptions</span><span class="arrow">→</span>
+    <span>Idempotency key check</span><span class="arrow">→</span>
+    <span>Discount window + usage</span><span class="arrow">→</span>
+    <span>Tax rules</span><span class="arrow">→</span>
+    <span>Invoice snapshot</span><span class="arrow">→</span>
+    <span>Send / Ledger</span>
+  </div>
+</div>
+
+<!-- ============ 5 ============ -->
+<div class="section">
+  <span class="sec-num">Section 05</span>
+  <h2>TypeScript contracts</h2>
+  <p class="lede">frontend/src/types/contracts.ts — field names verbatim from the shared contract. Enums are string-literal unions; no <code class="inline">any</code> anywhere.</p>
+
+<pre><span class="k">export type</span> Role = <span class="s">'ADMIN'</span> | <span class="s">'STAFF'</span> | <span class="s">'CUSTOMER'</span>;
+<span class="k">export type</span> ProductType = <span class="s">'SERVICE'</span> | <span class="s">'ADDON'</span>;
+<span class="k">export type</span> BillingFrequency = <span class="s">'DAILY'</span> | <span class="s">'WEEKLY'</span> | <span class="s">'MONTHLY'</span> | <span class="s">'YEARLY'</span>;
+<span class="k">export type</span> DiscountType = <span class="s">'PERCENT'</span> | <span class="s">'FIXED'</span>;
+<span class="k">export type</span> DiscountScope = <span class="s">'PRODUCT'</span> | <span class="s">'SUBSCRIPTION'</span>;
+<span class="k">export type</span> SubscriptionStatus = <span class="s">'DRAFT'</span> | <span class="s">'QUOTATION'</span> | <span class="s">'CONFIRMED'</span> | <span class="s">'ACTIVE'</span>
+  | <span class="s">'PAUSED'</span> | <span class="s">'CLOSED'</span>;
+<span class="k">export type</span> InvoiceStatus = <span class="s">'DRAFT'</span> | <span class="s">'CONFIRMED'</span> | <span class="s">'PARTIALLY_PAID'</span> | <span class="s">'PAID'</span>
+  | <span class="s">'CANCELLED'</span>;
+<span class="k">export type</span> PaymentMethod = <span class="s">'UPI'</span> | <span class="s">'BANK_TRANSFER'</span> | <span class="s">'CARD'</span> | <span class="s">'CASH'</span>;
+
+<span class="c">/** YYYY-MM-DD */</span>
+<span class="k">export type</span> DateStr = <span class="k">string</span>;
+
+<span class="k">export interface</span> User {
+  id: <span class="k">number</span>; email: <span class="k">string</span>; full_name: <span class="k">string</span>; role: Role;
+  reset_token: <span class="k">string</span> | <span class="k">null</span>; created_at: DateStr;
+}
+<span class="k">export interface</span> Product {
+  id: <span class="k">number</span>; name: <span class="k">string</span>; product_type: ProductType;
+  sales_price: <span class="k">number</span>; cost_price: <span class="k">number</span>; notes: <span class="k">string</span> | <span class="k">null</span>; is_active: <span class="k">boolean</span>;
+}
+<span class="k">export interface</span> ProductVariant {
+  id: <span class="k">number</span>; product_id: <span class="k">number</span>; attribute_name: <span class="k">string</span>;
+  attribute_value: <span class="k">string</span>; price_extra: <span class="k">number</span>;
+}
+<span class="k">export interface</span> TaxRule { id: <span class="k">number</span>; name: <span class="k">string</span>; rate_percent: <span class="k">number</span>; is_active: <span class="k">boolean</span> }
+
+<span class="k">export interface</span> DiscountRule {
+  id: <span class="k">number</span>; name: <span class="k">string</span>; discount_type: DiscountType; value: <span class="k">number</span>;
+  scope: DiscountScope; min_qty: <span class="k">number</span>; min_purchase: <span class="k">number</span>;
+  valid_from: DateStr; valid_until: DateStr | <span class="k">null</span>;
+  max_uses: <span class="k">number</span> | <span class="k">null</span>; current_uses: <span class="k">number</span>;
+}
+<span class="k">export interface</span> Plan {
+  id: <span class="k">number</span>; name: <span class="k">string</span>; billing_frequency: BillingFrequency;
+  plan_price: <span class="k">number</span>; min_qty: <span class="k">number</span>;
+  available_from: DateStr; available_until: DateStr | <span class="k">null</span>;
+  auto_close: <span class="k">boolean</span>; can_close_early: <span class="k">boolean</span>;
+  can_pause: <span class="k">boolean</span>; can_renew: <span class="k">boolean</span>;
+}
+<span class="k">export interface</span> QuotationTemplate { id: <span class="k">number</span>; name: <span class="k">string</span>; plan_id: <span class="k">number</span>; validity_days: <span class="k">number</span> }
+<span class="k">export interface</span> QuotationTemplateLine {
+  id: <span class="k">number</span>; template_id: <span class="k">number</span>; product_id: <span class="k">number</span>;
+  variant_id: <span class="k">number</span> | <span class="k">null</span>; quantity: <span class="k">number</span>;
+}
+
+<span class="k">export interface</span> Subscription {
+  id: <span class="k">number</span>; sub_number: <span class="k">string</span>; customer_id: <span class="k">number</span>; plan_id: <span class="k">number</span>;
+  discount_id: <span class="k">number</span> | <span class="k">null</span>; status: SubscriptionStatus;
+  start_date: DateStr; next_billing_date: DateStr; expiry_date: DateStr | <span class="k">null</span>;
+  paused_at: DateStr | <span class="k">null</span>; payment_terms_days: <span class="k">number</span>;
+}
+<span class="k">export interface</span> SubscriptionLine {
+  id: <span class="k">number</span>; subscription_id: <span class="k">number</span>; product_id: <span class="k">number</span>;
+  variant_id: <span class="k">number</span> | <span class="k">null</span>; tax_id: <span class="k">number</span>;
+  discount_id: <span class="k">number</span> | <span class="k">null</span>; quantity: <span class="k">number</span>; unit_price: <span class="k">number</span>;
+}
+
+<span class="k">export interface</span> Invoice {
+  id: <span class="k">number</span>; invoice_number: <span class="k">string</span>; subscription_id: <span class="k">number</span>;
+  customer_id: <span class="k">number</span>; billing_period_key: <span class="k">string</span>; status: InvoiceStatus;
+  issue_date: DateStr; due_date: DateStr; subtotal: <span class="k">number</span>; total_discount: <span class="k">number</span>;
+  total_tax: <span class="k">number</span>; grand_total: <span class="k">number</span>; amount_paid: <span class="k">number</span>;
+}
+<span class="k">export interface</span> InvoiceLine {
+  id: <span class="k">number</span>; invoice_id: <span class="k">number</span>; product_name_snapshot: <span class="k">string</span>;
+  variant_name_snapshot: <span class="k">string</span> | <span class="k">null</span>; quantity: <span class="k">number</span>;
+  unit_price_snapshot: <span class="k">number</span>; discount_amount: <span class="k">number</span>;
+  tax_percent_snapshot: <span class="k">number</span>; tax_amount: <span class="k">number</span>; line_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> Payment {
+  id: <span class="k">number</span>; invoice_id: <span class="k">number</span>; payment_method: PaymentMethod;
+  amount: <span class="k">number</span>; payment_date: DateStr; note: <span class="k">string</span> | <span class="k">null</span>;
+}</pre>
+
+  <h3>Contract A — GET /api/subscriptions/{id}</h3>
+<pre><span class="k">export interface</span> SubscriptionDetailLine {
+  product_id: <span class="k">number</span>; product_name: <span class="k">string</span>; variant_name: <span class="k">string</span> | <span class="k">null</span>;
+  quantity: <span class="k">number</span>; unit_price: <span class="k">number</span>; discount_amount: <span class="k">number</span>;
+  discount_applied: <span class="k">boolean</span>; tax_percent: <span class="k">number</span>; tax_amount: <span class="k">number</span>;
+  line_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> SubscriptionSummary {
+  subtotal: <span class="k">number</span>; line_discount_total: <span class="k">number</span>; subscription_discount: <span class="k">number</span>;
+  total_discount: <span class="k">number</span>; total_tax: <span class="k">number</span>; grand_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> PlanPermissions {
+  auto_close: <span class="k">boolean</span>; can_close_early: <span class="k">boolean</span>;
+  can_pause: <span class="k">boolean</span>; can_renew: <span class="k">boolean</span>;
+}
+<span class="k">export interface</span> SubscriptionDetail {
+  id: <span class="k">number</span>; sub_number: <span class="k">string</span>; customer_id: <span class="k">number</span>;
+  customer_name: <span class="k">string</span>; plan_id: <span class="k">number</span>; plan_name: <span class="k">string</span>;
+  billing_frequency: BillingFrequency; status: SubscriptionStatus;
+  start_date: DateStr; next_billing_date: DateStr; expiry_date: DateStr | <span class="k">null</span>;
+  paused_at: DateStr | <span class="k">null</span>; plan_permissions: PlanPermissions;
+  lines: SubscriptionDetailLine[]; summary: SubscriptionSummary;
+}</pre>
+
+  <h3>Contract B — GET /api/invoices/{id}</h3>
+<pre><span class="k">export interface</span> InvoiceLineSnapshot {
+  product_name_snapshot: <span class="k">string</span>; variant_name_snapshot: <span class="k">string</span> | <span class="k">null</span>;
+  quantity: <span class="k">number</span>; unit_price_snapshot: <span class="k">number</span>; discount_amount: <span class="k">number</span>;
+  tax_percent_snapshot: <span class="k">number</span>; tax_amount: <span class="k">number</span>; line_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> PaymentRecord {
+  id: <span class="k">number</span>; payment_method: PaymentMethod; amount: <span class="k">number</span>;
+  payment_date: DateStr; note: <span class="k">string</span> | <span class="k">null</span>;
+}
+<span class="k">export interface</span> InvoiceDetail {
+  id: <span class="k">number</span>; invoice_number: <span class="k">string</span>; subscription_id: <span class="k">number</span>;
+  sub_number: <span class="k">string</span>; customer_name: <span class="k">string</span>; billing_period_key: <span class="k">string</span>;
+  status: InvoiceStatus; issue_date: DateStr; due_date: DateStr; is_overdue: <span class="k">boolean</span>;
+  subtotal: <span class="k">number</span>; total_discount: <span class="k">number</span>; total_tax: <span class="k">number</span>;
+  grand_total: <span class="k">number</span>; amount_paid: <span class="k">number</span>; amount_due: <span class="k">number</span>;
+  lines: InvoiceLineSnapshot[]; payments: PaymentRecord[];
+}</pre>
+
+  <h3>Contract C — GET /api/analytics/summary</h3>
+<pre><span class="k">export interface</span> OverdueInvoiceRow {
+  invoice_id: <span class="k">number</span>; invoice_number: <span class="k">string</span>; customer_name: <span class="k">string</span>;
+  amount_due: <span class="k">number</span>; due_date: DateStr; days_overdue: <span class="k">number</span>;
+}
+<span class="k">export interface</span> AnalyticsSummary {
+  query_time_ms: <span class="k">number</span>; active_subscriptions_count: <span class="k">number</span>;
+  mrr_collected: <span class="k">number</span>; total_outstanding_owed: <span class="k">number</span>;
+  overdue_invoices_count: <span class="k">number</span>; overdue_invoices: OverdueInvoiceRow[];
+}</pre>
+
+  <h3>List projections — derived from A/B, confirm with Member 4</h3>
+<pre><span class="k">export interface</span> Page&lt;T&gt; { items: T[]; total: <span class="k">number</span>; page: <span class="k">number</span>; page_size: <span class="k">number</span> }
+<span class="k">export interface</span> SubscriptionListItem {
+  id: <span class="k">number</span>; sub_number: <span class="k">string</span>; customer_name: <span class="k">string</span>; plan_name: <span class="k">string</span>;
+  billing_frequency: BillingFrequency; status: SubscriptionStatus;
+  next_billing_date: DateStr; expiry_date: DateStr | <span class="k">null</span>; grand_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> InvoiceListItem {
+  id: <span class="k">number</span>; invoice_number: <span class="k">string</span>; sub_number: <span class="k">string</span>;
+  customer_name: <span class="k">string</span>; status: InvoiceStatus; issue_date: DateStr; due_date: DateStr;
+  is_overdue: <span class="k">boolean</span>; grand_total: <span class="k">number</span>; amount_paid: <span class="k">number</span>;
+  amount_due: <span class="k">number</span>;
+}
+<span class="k">export interface</span> PaymentListItem <span class="k">extends</span> PaymentRecord {
+  invoice_number: <span class="k">string</span>; customer_name: <span class="k">string</span>;
+}</pre>
+</div>
+
+<!-- ============ 6 ============ -->
+<div class="section">
+  <span class="sec-num">Section 06</span>
+  <h2>Mirrored business engine</h2>
+  <p class="lede">frontend/src/mocks/engine/ — pure, framework-free, no React imports. Mirrors Member 2's Python math exactly so mock mode behaves like the real backend.</p>
+
+  <h3>Engine types</h3>
+<pre><span class="k">export interface</span> DiscountInput {
+  type: DiscountType; value: <span class="k">number</span>; min_qty: <span class="k">number</span>; min_purchase: <span class="k">number</span>;
+  uses_left: <span class="k">number</span>; valid_from: DateStr; valid_until: DateStr | <span class="k">null</span>;
+}
+<span class="k">export interface</span> LineItemResult {
+  unit_price: <span class="k">number</span>; gross_amount: <span class="k">number</span>; discount_amount: <span class="k">number</span>;
+  discount_applied: <span class="k">boolean</span>; taxable_amount: <span class="k">number</span>;
+  tax_amount: <span class="k">number</span>; line_total: <span class="k">number</span>;
+}
+<span class="k">export interface</span> PlanFlags {
+  auto_close: <span class="k">boolean</span>; can_close_early: <span class="k">boolean</span>;
+  can_pause: <span class="k">boolean</span>; can_renew: <span class="k">boolean</span>;
+}
+<span class="k">export interface</span> TransitionResult {
+  allowed: <span class="k">boolean</span>; next_status: SubscriptionStatus;
+  next_billing_date: DateStr; expiry_date: DateStr | <span class="k">null</span>;
+  paused_at: DateStr | <span class="k">null</span>; error: <span class="k">string</span> | <span class="k">null</span>;
+}
+<span class="k">export interface</span> BillingDecision {
+  action: <span class="s">'BILL'</span> | <span class="s">'AUTO_CLOSE'</span> | <span class="s">'SKIP'</span>;
+  billing_period_key: <span class="k">string</span>; next_billing_date: DateStr;
+  new_status: SubscriptionStatus; reason: <span class="k">string</span>;
+}</pre>
+
+  <h3>Three required pure functions</h3>
+<pre><span class="c">// engine/lineItem.ts</span>
+<span class="k">export function</span> calculateLineItem(
+  base_price: <span class="k">number</span>, variant_extra: <span class="k">number</span>, quantity: <span class="k">number</span>,
+  tax_percent: <span class="k">number</span>, discount: DiscountInput | <span class="k">null</span>, today_str: DateStr,
+): LineItemResult;
+
+<span class="c">// engine/transitions.ts</span>
+<span class="k">export function</span> checkSubscriptionTransition(
+  current_status: SubscriptionStatus, target_status: SubscriptionStatus,
+  plan_flags: PlanFlags, next_billing_date: DateStr, expiry_date: DateStr | <span class="k">null</span>,
+  paused_at: DateStr | <span class="k">null</span>, today_str: DateStr,
+): TransitionResult;
+
+<span class="c">// engine/billing.ts</span>
+<span class="k">export function</span> evaluateSubscriptionForBilling(
+  sub_number: <span class="k">string</span>, status: SubscriptionStatus, billing_frequency: BillingFrequency,
+  next_billing_date: DateStr, expiry_date: DateStr | <span class="k">null</span>, auto_close: <span class="k">boolean</span>,
+  today_str: DateStr, existing_period_keys: ReadonlySet&lt;<span class="k">string</span>&gt;,
+): BillingDecision;</pre>
+
+  <h3>Supporting pure modules</h3>
+  <table>
+    <thead><tr><th style="width:26%">Module</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">money.ts</td><td><code class="inline">roundHalfUp2</code> (sign-aware, mirrors Python <code class="inline">Decimal.ROUND_HALF_UP</code>), <code class="inline">sumLines</code>, INR formatter re-export</td></tr>
+      <tr><td class="mono">dates.ts</td><td><code class="inline">addCycle(date, freq)</code> via <code class="inline">addDays/addWeeks/addMonths/addYears</code>; <code class="inline">diffDays</code>; <code class="inline">isWithinWindow</code></td></tr>
+      <tr><td class="mono">payments.ts</td><td><code class="inline">applyPaymentToInvoice(invoice, payments)</code> → <code class="inline">{ status, amount_paid, amount_due, is_overdue }</code>; CONFIRMED → PARTIALLY_PAID → PAID; refuses overpayment</td></tr>
+      <tr><td class="mono">billingBatch.ts</td><td><code class="inline">runBillingDayBatch(state, today_str)</code> → <code class="inline">{ state, report }</code>. Per-subscription try/catch, increments <code class="inline">current_uses</code> only on a created invoice, returns new slices</td></tr>
+      <tr><td class="mono">snapshots.ts</td><td><code class="inline">buildInvoiceLines(...)</code> — the only place invoice lines are created; nothing reads live catalog afterwards</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Math, stated once</h3>
+  <div class="flow">
+    <span>Unit = Base + VariantExtra</span><span class="arrow">→</span>
+    <span>Gross = Unit × Qty</span><span class="arrow">→</span>
+    <span>Discount gate</span><span class="arrow">→</span>
+    <span>Taxable = Gross − Discount</span><span class="arrow">→</span>
+    <span>Tax = Taxable × rate / 100</span><span class="arrow">→</span>
+    <span>Line total = Taxable + Tax</span>
+  </div>
+  <p class="small">Discount applies only when: today inside <code class="inline">[valid_from, valid_until]</code>, <code class="inline">qty ≥ min_qty</code>,
+  <code class="inline">gross ≥ min_purchase</code>, and <code class="inline">uses_left &gt; 0</code>. Rounding is half-up to 2 decimals at the line level only.</p>
+
+  <h3>Billing batch report</h3>
+<pre><span class="k">export interface</span> BillingRunReport {
+  ran_at: <span class="k">string</span>; today: DateStr; billed: <span class="k">number</span>; skipped: <span class="k">number</span>;
+  auto_closed: <span class="k">number</span>;
+  failed: { sub_number: <span class="k">string</span>; reason: <span class="k">string</span> }[];
+  decisions: BillingDecision[]; duration_ms: <span class="k">number</span>;
+}</pre>
+</div>
+
+<!-- ============ 7 ============ -->
+<div class="section">
+  <span class="sec-num">Section 07</span>
+  <h2>Mock store shape</h2>
+  <p class="lede">React context + useReducer, seeded once with a deterministic PRNG (mulberry32(1337)) so every demo reset reproduces identically.</p>
+
+<pre><span class="k">export interface</span> AppState {
+  session: { user_id: <span class="k">number</span> | <span class="k">null</span>; role: Role; is_authenticated: <span class="k">boolean</span> };
+  today: DateStr;                       <span class="c">// the Time-Travel clock</span>
+  users: User[];
+  products: Product[];
+  product_variants: ProductVariant[];
+  tax_rules: TaxRule[];
+  discount_rules: DiscountRule[];
+  plans: Plan[];
+  quotation_templates: QuotationTemplate[];
+  quotation_template_lines: QuotationTemplateLine[];
+  subscriptions: Subscription[];
+  subscription_lines: SubscriptionLine[];
+  invoices: Invoice[];
+  invoice_lines: InvoiceLine[];
+  payments: Payment[];
+  ui: {
+    notifications: AppNotification[];
+    notifications_read: <span class="k">boolean</span>;
+    palette_open: <span class="k">boolean</span>;
+    last_billing_report: BillingRunReport | <span class="k">null</span>;
+    insights: RevenueInsight[];
+  };
+  meta: { seeded_at: <span class="k">string</span>; last_query_ms: <span class="k">number</span>; data_version: <span class="k">number</span> };
+}
+
+<span class="k">export interface</span> AppNotification {
+  id: <span class="k">string</span>; kind: <span class="s">'OVERDUE'</span> | <span class="s">'RENEWAL'</span> | <span class="s">'PAYMENT'</span> | <span class="s">'DISCOUNT'</span>;
+  title: <span class="k">string</span>; body: <span class="k">string</span>; created_at: <span class="k">string</span>; read: <span class="k">boolean</span>; href: <span class="k">string</span>;
+}
+<span class="k">export interface</span> RevenueInsight {
+  id: <span class="k">string</span>; severity: <span class="s">'GREEN'</span> | <span class="s">'YELLOW'</span> | <span class="s">'RED'</span>;
+  title: <span class="k">string</span>; body: <span class="k">string</span>; action_label: <span class="k">string</span>;
+  action: <span class="s">'APPLY_DISCOUNT'</span> | <span class="s">'RENEW_SUBSCRIPTIONS'</span> | <span class="s">'SEND_REMINDERS'</span>;
+  applied: <span class="k">boolean</span>;
+}</pre>
+
+  <h3>Action union — all typed, no any</h3>
+  <p class="small mono" style="line-height:1.7">
+    SET_TODAY · TIME_TRAVEL · LOGIN · SIGNUP · LOGOUT · SWITCH_ROLE · REQUEST_PASSWORD_RESET ·
+    RUN_BILLING_BATCH · RECORD_PAYMENT · CONFIRM_INVOICE · SEND_INVOICE · CANCEL_INVOICE · SEND_REMINDER ·
+    CREATE_PRODUCT · UPDATE_PRODUCT · ADD_VARIANT · CREATE_PLAN · UPDATE_PLAN · CREATE_TAX_RULE ·
+    CREATE_DISCOUNT_RULE · UPDATE_DISCOUNT_RULE · TOGGLE_DISCOUNT_RULE · CREATE_QUOTATION_TEMPLATE ·
+    CREATE_SUBSCRIPTION_FROM_TEMPLATE · TRANSITION_SUBSCRIPTION · TOGGLE_ADDON · ADD_STAFF ·
+    MARK_NOTIFICATIONS_READ · APPLY_INSIGHT · RESET_DEMO_DATA · SET_QUERY_MS
+  </p>
+
+  <h3>Derived selectors</h3>
+  <p>Selectors live in <code class="inline">mocks/selectors/</code> and are memoized. Index maps
+  (<code class="inline">subscriptionsById</code>, <code class="inline">invoicesBySubscription</code>,
+  <code class="inline">existingPeriodKeys</code>, <code class="inline">paymentsByInvoice</code>) are built once per
+  <code class="inline">data_version</code> inside a <code class="inline">useMemo</code>. This is what keeps the 2,000 / 6,000 dataset
+  inside the 2-second budget.</p>
+
+  <h3>Seed volume</h3>
+  <table>
+    <thead><tr><th style="width:34%">Entity</th><th style="width:22%">Count</th><th>Mix</th></tr></thead>
+    <tbody>
+      <tr><td>Subscriptions</td><td class="num">2,000</td><td>1,850 ACTIVE · 60 PAUSED · 40 CONFIRMED · 50 CLOSED</td></tr>
+      <tr><td>Invoices</td><td class="num">6,000</td><td>1,900 PAID · 1,100 PARTIALLY_PAID · 2,400 CONFIRMED · 450 overdue · 150 CANCELLED</td></tr>
+      <tr><td>Customers</td><td class="num">1,200</td><td>small shops on monthly plans → large companies on yearly contracts</td></tr>
+      <tr><td>Payments</td><td class="num">3,600</td><td>UPI · BANK_TRANSFER · CARD · CASH</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="h">Story fixtures</div>
+    <p><strong>Brightloop Cloud ERP</strong> — SERVICE, sales ₹2,000, cost ₹500, variant Brand = Odoo (+₹560 → ₹2,560).
+    <strong>WhatsApp Automated Alerts</strong> — ADDON ₹300/month. <strong>Annual Enterprise Plan</strong> — YEARLY, min qty 5,
+    can_pause true, can_close_early false. <strong>10% Off 10+ Seats</strong> — PERCENT, min_qty 10, max_uses 50, valid until Dec 31.
+    <strong>GST 18%</strong> — tax rule.</p>
+  </div>
+</div>
+
+<!-- ============ 8 ============ -->
+<div class="section">
+  <span class="sec-num">Section 08</span>
+  <h2>services/api.ts surface</h2>
+  <p class="lede">The only module the UI may import. One flag decides mock or live; components never change.</p>
+
+<pre><span class="k">const</span> USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? <span class="s">'true'</span>) === <span class="s">'true'</span>;
+<span class="c">// every function: USE_MOCK ? mockAdapter.fn(...) : liveAdapter.fn(...)</span></pre>
+
+  <h3>Contract reads</h3>
+<pre>getSubscription(id: <span class="k">number</span>): Promise&lt;SubscriptionDetail&gt;;                  <span class="c">// A</span>
+listSubscriptions(q: SubscriptionQuery): Promise&lt;Page&lt;SubscriptionListItem&gt;&gt;;
+getInvoice(id: <span class="k">number</span>): Promise&lt;InvoiceDetail&gt;;                              <span class="c">// B</span>
+listInvoices(q: InvoiceQuery): Promise&lt;Page&lt;InvoiceListItem&gt;&gt;;
+listPayments(q: PaymentQuery): Promise&lt;Page&lt;PaymentListItem&gt;&gt;;
+getAnalyticsSummary(q: AnalyticsQuery): Promise&lt;AnalyticsSummary&gt;;           <span class="c">// C</span></pre>
+
+  <h3>Billing cycle</h3>
+<pre>runBillingDay(today: DateStr): Promise&lt;BillingRunReport&gt;;
+previewBillingDay(today: DateStr): Promise&lt;BillingDecision[]&gt;;</pre>
+
+  <h3>Money</h3>
+<pre>recordPayment(input: RecordPaymentInput): Promise&lt;InvoiceDetail&gt;;</pre>
+
+  <h3>Lifecycle</h3>
+<pre>transitionSubscription(input: TransitionSubscriptionInput): Promise&lt;SubscriptionDetail&gt;;
+toggleAddon(input: ToggleAddonInput): Promise&lt;SubscriptionDetail&gt;;
+createSubscriptionFromTemplate(input: CreateFromTemplateInput): Promise&lt;SubscriptionDetail&gt;;
+listQuotationTemplates(): Promise&lt;QuotationTemplate[]&gt;;</pre>
+
+  <h3>Admin studio</h3>
+<pre>listProducts(): Promise&lt;Product[]&gt;;
+createProduct(input: CreateProductInput): Promise&lt;Product&gt;;
+updateProduct(input: UpdateProductInput): Promise&lt;Product&gt;;
+addVariant(input: AddVariantInput): Promise&lt;ProductVariant&gt;;
+listPlans(): Promise&lt;Plan[]&gt;;
+createPlan(input: CreatePlanInput): Promise&lt;Plan&gt;;
+updatePlan(input: UpdatePlanInput): Promise&lt;Plan&gt;;
+listTaxRules(): Promise&lt;TaxRule[]&gt;;
+createTaxRule(input: CreateTaxRuleInput): Promise&lt;TaxRule&gt;;
+listDiscountRules(): Promise&lt;DiscountRule[]&gt;;
+createDiscountRule(input: CreateDiscountRuleInput): Promise&lt;DiscountRule&gt;;
+updateDiscountRule(input: UpdateDiscountRuleInput): Promise&lt;DiscountRule&gt;;
+listStaff(): Promise&lt;User[]&gt;;
+addStaff(input: AddStaffInput): Promise&lt;User&gt;;</pre>
+
+  <h3>Invoice operations &amp; auth</h3>
+<pre>confirmInvoice(id: <span class="k">number</span>): Promise&lt;InvoiceDetail&gt;;
+sendInvoice(id: <span class="k">number</span>): Promise&lt;InvoiceDetail&gt;;      <span class="c">// mocked send + toast</span>
+cancelInvoice(id: <span class="k">number</span>): Promise&lt;InvoiceDetail&gt;;
+sendReminder(invoiceId: <span class="k">number</span>): Promise&lt;{ sent: <span class="k">true</span>; to: <span class="k">string</span> }&gt;;
+
+login(input: LoginInput): Promise&lt;SessionUser&gt;;
+signup(input: SignupInput): Promise&lt;SessionUser&gt;;
+requestPasswordReset(email: <span class="k">string</span>): Promise&lt;{ sent: <span class="k">true</span> }&gt;;</pre>
+
+  <h3>Portal &amp; demo controls</h3>
+<pre>getPortalOverview(): Promise&lt;{ subscriptions: SubscriptionListItem[]; invoices: InvoiceListItem[] }&gt;;
+resetDemoData(): Promise&lt;<span class="k">void</span>&gt;;
+getClock(): Promise&lt;{ today: DateStr }&gt;;
+setClock(today: DateStr): Promise&lt;{ today: DateStr }&gt;;</pre>
+
+  <div class="note">
+    <strong>Live branch.</strong> <code class="inline">liveAdapter</code> is a typed <code class="inline">fetch</code> stub reading
+    <code class="inline">VITE_API_BASE_URL</code>, with a <code class="inline">request&lt;T&gt;(path, init): Promise&lt;T&gt;</code> helper and
+    1:1 path mapping (<code class="inline">/api/subscriptions/:id</code>, <code class="inline">/api/invoices/:id</code>,
+    <code class="inline">/api/analytics/summary</code>). Every mock function awaits 120–260 ms of artificial latency so loading
+    states are real and testable.
+  </div>
+</div>
+
+<!-- ============ 9 ============ -->
+<div class="section">
+  <span class="sec-num">Section 09</span>
+  <h2>File tree</h2>
+  <p class="lede">Ownership respected: pages, components, mocks and contract types are mine; services/api is the shared seam with Member 4.</p>
+
+<pre class="tree">frontend/
+├── index.html
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── .env.example                     <span class="c"># VITE_API_BASE_URL=  VITE_USE_MOCK=true</span>
+└── src/
+    ├── main.tsx
+    ├── App.tsx                      <span class="c"># providers + router</span>
+    ├── index.css                    <span class="c"># tailwind, tw-animate-css, print stylesheet</span>
+    ├── types/
+    │   ├── contracts.ts             <span class="c"># §5 — A/B/C + entities</span>
+    │   ├── api.ts                   <span class="c"># query/input DTOs</span>
+    │   └── nav.ts                   <span class="c"># role → nav map</span>
+    ├── services/
+    │   ├── api.ts                   <span class="c"># USE_MOCK router (only import surface for UI)</span>
+    │   ├── mock.adapter.ts          <span class="c"># api.ts → store/engine bridge</span>
+    │   └── live.adapter.ts          <span class="c"># typed fetch stub</span>
+    ├── mocks/
+    │   ├── seed.ts                  <span class="c"># deterministic 2k subs / 6k invoices</span>
+    │   ├── fixtures.ts              <span class="c"># the story data from the brief</span>
+    │   ├── engine/
+    │   │   ├── types.ts
+    │   │   ├── money.ts
+    │   │   ├── dates.ts
+    │   │   ├── lineItem.ts
+    │   │   ├── transitions.ts
+    │   │   ├── billing.ts
+    │   │   ├── billingBatch.ts
+    │   │   ├── payments.ts
+    │   │   └── snapshots.ts
+    │   ├── store/
+    │   │   ├── AppStore.tsx         <span class="c"># context + useReducer</span>
+    │   │   ├── reducer.ts
+    │   │   └── actions.ts
+    │   └── selectors/
+    │       ├── indexes.ts           <span class="c"># Maps + period-key Set</span>
+    │       ├── analytics.ts         <span class="c"># Contract C, times itself</span>
+    │       └── lists.ts             <span class="c"># filtered/paged projections</span>
+    ├── lib/
+    │   ├── format.ts                <span class="c"># formatINR (en-IN), formatDate, formatPercent</span>
+    │   ├── cn.ts
+    │   ├── useDebouncedValue.ts
+    │   ├── useCountUp.ts
+    │   └── constants.ts             <span class="c"># status colors, chevron order, role nav</span>
+    ├── components/
+    │   ├── ui/                      <span class="c"># shadcn generated</span>
+    │   ├── layout/
+    │   │   ├── AppShell.tsx
+    │   │   ├── Sidebar.tsx          <span class="c"># collapsible + mobile Sheet</span>
+    │   │   ├── Topbar.tsx
+    │   │   ├── CommandPalette.tsx   <span class="c"># Cmd+K</span>
+    │   │   ├── NotificationsPopover.tsx
+    │   │   ├── RoleSwitcher.tsx
+    │   │   ├── ThemeToggle.tsx
+    │   │   └── UserMenu.tsx         <span class="c"># logout confirm</span>
+    │   ├── common/
+    │   │   ├── PageHeader.tsx
+    │   │   ├── EmptyState.tsx       <span class="c"># "No data captured yet…"</span>
+    │   │   ├── LoadingSkeleton.tsx
+    │   │   ├── ErrorState.tsx
+    │   │   ├── MoneyText.tsx
+    │   │   ├── StatusBadge.tsx
+    │   │   ├── QueryTimeBadge.tsx
+    │   │   ├── DataTable.tsx        <span class="c"># TanStack wrapper</span>
+    │   │   └── ConfirmDialog.tsx
+    │   ├── finance/
+    │   │   ├── KpiCard.tsx
+    │   │   ├── MrrOutstandingChart.tsx
+    │   │   ├── RevenueMixChart.tsx
+    │   │   ├── InvoiceStatusDonut.tsx
+    │   │   ├── OverdueChaseTable.tsx
+    │   │   ├── WhatIfCalculator.tsx
+    │   │   └── RevenueInsightsPanel.tsx
+    │   ├── subscriptions/
+    │   │   ├── StatusChevronRibbon.tsx
+    │   │   ├── SubscriptionTable.tsx
+    │   │   ├── SubscriptionHeaderCard.tsx
+    │   │   ├── OrderLinesTable.tsx
+    │   │   ├── PlanActionBar.tsx    <span class="c"># pause/close/renew, flag-gated + tooltip</span>
+    │   │   └── TemplatePicker.tsx
+    │   ├── billing/
+    │   │   ├── TimeTravelBar.tsx
+    │   │   ├── RunBillingDayPanel.tsx
+    │   │   ├── PipelineStages.tsx
+    │   │   ├── RunLedger.tsx
+    │   │   ├── InvoiceTable.tsx
+    │   │   ├── InvoiceDocument.tsx  <span class="c"># print target</span>
+    │   │   └── RecordPaymentDialog.tsx
+    │   ├── catalog/
+    │   │   ├── ProductDialog.tsx
+    │   │   ├── VariantEditor.tsx
+    │   │   ├── PlanDialog.tsx       <span class="c"># 4 permission toggles</span>
+    │   │   ├── TaxRuleDialog.tsx
+    │   │   ├── DiscountRuleDialog.tsx
+    │   │   ├── QuotationTemplateDialog.tsx
+    │   │   └── AddStaffDialog.tsx
+    │   ├── portal/
+    │   │   ├── PortalSubscriptionCard.tsx
+    │   │   └── PortalInvoiceList.tsx
+    │   └── auth/
+    │       ├── PasswordChecklist.tsx
+    │       ├── AuthLayout.tsx
+    │       └── ForgotPasswordDialog.tsx
+    └── pages/
+        ├── auth/LoginPage.tsx  SignupPage.tsx
+        ├── DashboardPage.tsx
+        ├── BillingDayPage.tsx
+        ├── SubscriptionsPage.tsx  SubscriptionDetailPage.tsx
+        ├── NewQuotationPage.tsx
+        ├── InvoicesPage.tsx  InvoiceDetailPage.tsx
+        ├── PaymentsPage.tsx
+        ├── catalog/ProductsPage.tsx  PlansPage.tsx  TaxRulesPage.tsx
+        │            DiscountRulesPage.tsx  QuotationTemplatesPage.tsx
+        ├── TeamPage.tsx
+        ├── portal/PortalHomePage.tsx  PortalSubscriptionPage.tsx  PortalInvoicePage.tsx
+        └── NotFoundPage.tsx  ForbiddenPage.tsx</pre>
+</div>
+
+<!-- ============ 10 ============ -->
+<div class="section">
+  <span class="sec-num">Section 10</span>
+  <h2>Judge-breaker edge cases</h2>
+  <p class="lede">Each one is visible in the UI, not buried in code — that is the difference between a demo and a system.</p>
+
+  <table>
+    <thead><tr><th style="width:20%">Edge case</th><th style="width:30%">Where the judge sees it</th><th>Mechanism</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Double-billing guard</strong></td>
+        <td><span class="mono">/billing</span> — run the batch twice</td>
+        <td><code class="inline">billing_period_key</code> set → SKIP + “0 created · 37 already billed” toast; Run Ledger shows SKIP reasons</td>
+      </tr>
+      <tr>
+        <td><strong>Snapshot immutability</strong></td>
+        <td><span class="mono">/invoices/:id</span> after editing a Product price in Studio</td>
+        <td>Invoice renders <code class="inline">*_snapshot</code> columns only; before/after price banner proves the invoice is unchanged</td>
+      </tr>
+      <tr>
+        <td><strong>Discount expiry / usage exhaustion</strong></td>
+        <td><span class="mono">/catalog/discount-rules</span> + next billing run</td>
+        <td>Past <code class="inline">valid_until</code> or <code class="inline">current_uses ≥ max_uses</code> → <code class="inline">discount_applied: false</code>; row shows 48/50 then 50/50 — exhausted</td>
+      </tr>
+      <tr>
+        <td><strong>Pause date shift</strong></td>
+        <td><span class="mono">/subscriptions/:id</span> — pause 10 days, then resume</td>
+        <td><code class="inline">next_billing_date</code> and <code class="inline">expiry_date</code> shift by exactly 10 days; ribbon shows PAUSED with <code class="inline">paused_at</code></td>
+      </tr>
+      <tr>
+        <td><strong>Partial payments</strong></td>
+        <td><span class="mono">/invoices/:id</span> — pay ₹1,000 of ₹3,020</td>
+        <td>CONFIRMED → PARTIALLY_PAID → PAID, <code class="inline">amount_due</code> recomputed, KPI Outstanding drops</td>
+      </tr>
+      <tr>
+        <td><strong>Plan-flag-disabled buttons</strong></td>
+        <td><span class="mono">/subscriptions/:id</span> on Annual Enterprise Plan (<code class="inline">can_close_early: false</code>)</td>
+        <td>Disabled + tooltip “This plan does not allow early closure” — enforced by <code class="inline">checkSubscriptionTransition</code>, not the button</td>
+      </tr>
+      <tr>
+        <td><strong>One bad record doesn't block the batch</strong></td>
+        <td><span class="mono">/billing</span> failed strip</td>
+        <td>Per-subscription <code class="inline">try/catch</code> → <code class="inline">failed[]</code> rendered as amber rows while the rest succeed</td>
+      </tr>
+      <tr>
+        <td><strong>Tax computed from rules</strong></td>
+        <td>Invoice lines</td>
+        <td><code class="inline">tax_percent_snapshot</code> from the Tax Rule (GST 18%), never hardcoded</td>
+      </tr>
+      <tr>
+        <td><strong>Unique email / password policy</strong></td>
+        <td><span class="mono">/signup</span></td>
+        <td>Live checklist (9+, upper, lower, special) + duplicate-email error before submit</td>
+      </tr>
+      <tr>
+        <td><strong>No double charge on cancel</strong></td>
+        <td><span class="mono">/invoices/:id</span> — cancel</td>
+        <td>CANCELLED invoices excluded from outstanding/overdue and from period-key reuse</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="h">Enforcement principle</div>
+    <p>Business rules live in the reducer and the mirrored engine, never in the view. Buttons are disabled <em>because</em> the
+    engine refused, so a judge cannot click through the UI into an illegal state.</p>
+  </div>
+</div>
+
+<!-- ============ 11 ============ -->
+<div class="section">
+  <span class="sec-num">Section 11</span>
+  <h2>Three-minute demo story</h2>
+  <p class="lede">One continuous narrative: billing day is due, renewals are about to lapse, overdue invoices threaten revenue, a discount auto-applies — and after the actions MRR rises while Overdue falls.</p>
+
+  <table>
+    <thead><tr><th style="width:12%">Time</th><th style="width:38%">Action</th><th>What judges see</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">0:00–0:15</td><td>Open <span class="mono">/dashboard</span> as <strong>ADMIN</strong></td><td>KPIs load, <em>Query Time: 38 ms</em>, 1,850 active, ₹48.2L MRR, ₹6.4L outstanding, 412 overdue</td></tr>
+      <tr><td class="mono">0:15–0:35</td><td>Click <strong>Run Revenue Insights</strong></td><td>1.5 s spinner → red “412 overdue at risk”, yellow “9 renewals within 7 days”, green “10% Off 10+ Seats will auto-apply”</td></tr>
+      <tr><td class="mono">0:35–0:55</td><td><strong>Apply</strong> green, then red</td><td>Discount usage 41 → 42; reminders sent; Outstanding and Overdue tick down with animated counters</td></tr>
+      <tr><td class="mono">0:55–1:15</td><td>What-if: Annual Enterprise, YEARLY, qty slider 5 → 12, discount ON, GST 18%</td><td>Projected MRR recalculates live: ₹2,560 × 12, 10% off, 18% tax</td></tr>
+      <tr><td class="mono">1:15–1:45</td><td><span class="mono">/billing</span> → Time-Travel to billing day → <strong>Run Billing Day Batch</strong></td><td>Five-stage pipeline animation, 37 invoices created, MRR ↑, Outstanding ↑, Run Ledger populated</td></tr>
+      <tr><td class="mono">1:45–2:00</td><td><strong>Run it again</strong></td><td>“0 invoices created · 37 already billed — nothing billed twice.” Idempotency proven</td></tr>
+      <tr><td class="mono">2:00–2:20</td><td>Open a generated invoice → <strong>Record Payment</strong> ₹2,000 of ₹3,020</td><td>PARTIALLY_PAID, <code class="inline">amount_due</code> ₹1,020, dashboard Outstanding drops; second payment → PAID</td></tr>
+      <tr><td class="mono">2:20–2:35</td><td>Edit “Brightloop Cloud ERP” price in Studio → return to invoice</td><td>Invoice still shows the ₹2,560 snapshot — immutability proven</td></tr>
+      <tr><td class="mono">2:35–2:50</td><td>Subscription detail → try <strong>Close Early</strong> on Annual plan</td><td>Disabled with tooltip; then <strong>Pause</strong> → time-travel → resume → dates shift exactly</td></tr>
+      <tr><td class="mono">2:50–3:00</td><td>Switch role to <strong>CUSTOMER</strong></td><td>Sidebar collapses to Portal only; sees only own 2 subscriptions and 3 invoices. Logout confirm → done</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Why this order works</h3>
+  <ul>
+    <li>Opens with the finance question, not with configuration — matches the primary user.</li>
+    <li>Every subsequent click moves a number the judge has already seen.</li>
+    <li>The second billing run converts a claim into a proof.</li>
+    <li>Closes on role isolation, the requirement most likely to be faked elsewhere.</li>
+  </ul>
+</div>
+
+<!-- ============ 12 ============ -->
+<div class="section">
+  <span class="sec-num">Section 12</span>
+  <h2>Open questions for the team</h2>
+  <p class="lede">Nothing here blocks Phase 2 — these are assumptions I will code against unless corrected.</p>
+
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:26%">Topic</th><th style="width:38%">Mock assumption</th><th style="width:31%">Needs</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><strong>mrr_collected</strong> definition</td><td>Normalized monthly value of ACTIVE subscriptions whose latest invoice is PAID (DAILY×30, WEEKLY×4.345, MONTHLY×1, YEARLY÷12)</td><td>Yes/no from Member 2 so mock and engine agree</td></tr>
+      <tr><td class="num">2</td><td><strong>Discount stacking</strong></td><td>Line discount + subscription discount additive, capped at gross per line</td><td>Member 2</td></tr>
+      <tr><td class="num">3</td><td><strong>Tax inclusive vs exclusive</strong></td><td>Exclusive — <code class="inline">Tax = Taxable × rate / 100</code>, per engine spec</td><td>Member 2</td></tr>
+      <tr><td class="num">4</td><td><strong>Source of “today”</strong></td><td>Mock uses the Time-Travel clock; live mode hides the simulator and uses server date</td><td>Member 1</td></tr>
+      <tr><td class="num">5</td><td><strong>List endpoint shapes</strong></td><td><code class="inline">Page&lt;T&gt;</code> + params <code class="inline">page</code>, <code class="inline">page_size</code>, <code class="inline">status</code>, <code class="inline">q</code>, <code class="inline">from</code>, <code class="inline">to</code></td><td>Member 4 to confirm param names</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Phase gates</h3>
+  <table>
+    <thead><tr><th style="width:16%">Phase</th><th style="width:44%">Deliverable</th><th>Exit test</th></tr></thead>
+    <tbody>
+      <tr><td><strong>2</strong></td><td>Auth screens, role shell, collapsible sidebar, Cmd+K palette, notifications, theme</td><td>Every nav item resolves; Cmd+K runs a real action; mobile drawer works</td></tr>
+      <tr><td><strong>3</strong></td><td>Finance dashboard, what-if calculator, Revenue Insights, Catalog &amp; Rules Studio, Staff subscription views</td><td>KPIs react to actions; engine math matches hand calculation</td></tr>
+      <tr><td><strong>4</strong></td><td>Billing Day Time-Travel Simulator, invoice print, Record Payment</td><td>Second run bills nothing; partial payment transitions correctly</td></tr>
+      <tr><td><strong>5</strong></td><td>Polish, skeletons, empty states, accessibility</td><td>Keyboard-only pass; contrast checked; no console errors</td></tr>
+      <tr><td><strong>6</strong></td><td>README, demo script, pre-presentation checklist</td><td><code class="inline">npm run build</code> clean; mock-to-live swap verified with Member 4</td></tr>
+    </tbody>
+  </table>
+
+  <div class="end">
+    End of Phase 1 blueprint · Brightloop Software · Subscription Management System ·
+    Next: Phase 2 — Shell &amp; Layout
+  </div>
+</div>
+
+</body>
+</html>
