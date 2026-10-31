@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
-# BrightLoop Subscription ERP - one-command full-stack setup (macOS / Linux / Git Bash).
-#
-# Run from the repository root:
-#     ./setup.sh             full setup
-#     ./setup.sh --skip-db   install everything except the database step
-#
-# Steps: check prerequisites -> create venv + pip install -r requirements.txt
-#        -> copy .env.example files -> create PostgreSQL database + seed demo data
-#        -> npm install in frontend/.
-# Safe to re-run: an existing venv, .env files and database data are kept.
+# Full-stack setup: venv + requirements, .env files, database + seed, npm install.
+# Usage: ./setup.sh [--skip-db]. Safe to re-run.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -24,7 +16,7 @@ echo " BrightLoop Subscription ERP - full-stack setup"
 echo "=================================================="
 echo
 
-# 1. Prerequisites -----------------------------------------------------------------
+# 1. Prerequisites
 step 1 "Checking prerequisites..."
 PYTHON=""
 for candidate in python3 python; do
@@ -38,14 +30,14 @@ if [ -z "$PYTHON" ]; then fail "Python 3.11+ was not found on PATH (https://www.
 if ! command -v node >/dev/null 2>&1; then fail "Node.js 22 LTS was not found on PATH (https://nodejs.org)."; fi
 echo "      $("$PYTHON" --version)   Node $(node -v)"
 
-# 2. Python virtual environment -------------------------------------------------------
+# 2. Python virtual environment
 step 2 "Creating the virtual environment (venv) and installing requirements.txt..."
 if [ ! -d venv ]; then "$PYTHON" -m venv venv; fi
 if [ -x venv/bin/python ]; then VENV_PY="venv/bin/python"; else VENV_PY="venv/Scripts/python"; fi
 "$VENV_PY" -m pip install --upgrade pip --quiet --disable-pip-version-check
 "$VENV_PY" -m pip install -r requirements.txt --quiet --disable-pip-version-check || fail "pip install -r requirements.txt failed."
 
-# 3. Environment files ----------------------------------------------------------------
+# 3. Environment files
 step 3 "Preparing .env files..."
 if [ ! -f .env ]; then
   cp .env.example .env
@@ -64,7 +56,7 @@ fi
 NEEDS_PASSWORD=0
 if grep -q "YOUR_POSTGRES_PASSWORD" .env; then NEEDS_PASSWORD=1; fi
 
-# 4. Database -------------------------------------------------------------------------
+# 4. Database
 if [ "$SKIP_DB" = 1 ]; then
   step 4 "Skipping the database step (--skip-db)."
 elif [ "$NEEDS_PASSWORD" = 1 ]; then
@@ -76,7 +68,7 @@ else
   "$VENV_PY" -m backend.seed || fail "Seeding demo data failed."
 fi
 
-# 5. Frontend dependencies ---------------------------------------------------------------
+# 5. Frontend dependencies
 step 5 "Installing frontend dependencies (npm install)..."
 (cd frontend && npm install --no-audit --no-fund) || fail "npm install failed. Check your network/proxy and try again."
 

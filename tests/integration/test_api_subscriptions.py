@@ -12,7 +12,7 @@ def _line(sub, product_name):
     return next(line for line in sub["lines"] if line["product_name"] == product_name)
 
 
-# --- quotations & pricing ------------------------------------------------------------
+# quotations & pricing
 def test_template_quote_prefills_plan_lines_variant_discount_and_tax(api):
     quote = api.quote_from_template(api.new_customer().id)
     assert quote["status"] == "QUOTATION" and quote["plan_name"] == "Annual Enterprise Plan"
@@ -57,7 +57,7 @@ def test_plan_minimum_quantity_is_enforced(api):
     assert response.status_code == 400 and "minimum quantity of 5" in response.json()["detail"]
 
 
-# --- status pipeline ---------------------------------------------------------------------
+# status pipeline
 def test_pipeline_runs_draft_quotation_confirmed_active(api):
     customer = api.new_customer()
     sub = api.draft(customer.id, api.catalog.monthly, [{"product_id": api.catalog.erp["id"], "quantity": 1}])
@@ -84,7 +84,7 @@ def test_customers_cannot_move_a_quotation(api):
     assert api.transition(quote["id"], "CONFIRMED", headers=customer.headers).status_code == 403
 
 
-# --- quotation validity -----------------------------------------------------------------------
+# quotation validity
 def test_template_validity_sets_the_quotation_deadline(api):
     quote = api.quote_from_template(api.new_customer().id)
     expected = date.today() + timedelta(days=api.catalog.template["validity_days"])
@@ -111,7 +111,7 @@ def test_quotation_can_be_confirmed_on_its_last_valid_day(api, db):
     assert api.advance(quote["id"], "CONFIRMED")["status"] == "CONFIRMED"
 
 
-# --- plan permissions, pause / resume, close / renew -------------------------------------------------
+# plan permissions, pause / resume, close / renew
 def test_pause_and_resume_shift_billing_and_expiry_by_the_paused_days(api, db):
     from backend.core.models import Subscription
 
@@ -156,7 +156,7 @@ def test_customer_can_close_and_renew_when_the_plan_allows(api):
     assert renewed["status"] == "ACTIVE" and renewed["next_billing_date"] == date.today().isoformat()
 
 
-# --- add-ons ----------------------------------------------------------------------------------------------
+# add-ons
 def test_customer_switches_addons_on_and_off(api):
     customer = api.new_customer()
     sub = api.active_monthly(customer.id)  # 1 x Cloud ERP (Odoo)

@@ -1,15 +1,5 @@
-<#
-  BrightLoop Subscription ERP - one-command full-stack setup (Windows PowerShell).
-
-  Run from the repository root:
-      .\setup.ps1                 (or double-click / run setup.cmd)
-      .\setup.ps1 -SkipDatabase   (install everything except the database step)
-
-  Steps: check prerequisites -> create venv + pip install -r requirements.txt
-         -> copy .env.example files -> create PostgreSQL database + seed demo data
-         -> npm install in frontend/.
-  Safe to re-run: an existing venv, .env files and database data are kept.
-#>
+# Full-stack setup: venv + requirements, .env files, database + seed, npm install.
+# Usage: .\setup.ps1 [-SkipDatabase]   (or run setup.cmd). Safe to re-run.
 param([switch]$SkipDatabase)
 
 Set-Location $PSScriptRoot
@@ -23,7 +13,7 @@ Write-Host ' BrightLoop Subscription ERP - full-stack setup'
 Write-Host '=================================================='
 Write-Host ''
 
-# 1. Prerequisites -----------------------------------------------------------
+# 1. Prerequisites
 Step 1 'Checking prerequisites...'
 $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) { $python = Get-Command py -ErrorAction SilentlyContinue }
@@ -33,7 +23,7 @@ if ($LASTEXITCODE -ne 0) { Fail 'Python 3.11 or newer is required.' }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Fail 'Node.js 22 LTS was not found on PATH. Install it from https://nodejs.org' }
 Write-Host ("      {0}   Node {1}" -f (& $python.Source --version), (node -v))
 
-# 2. Python virtual environment ---------------------------------------------------
+# 2. Python virtual environment
 Step 2 'Creating the virtual environment (venv) and installing requirements.txt...'
 $venvPython = Join-Path $PSScriptRoot 'venv\Scripts\python.exe'
 if (-not (Test-Path $venvPython)) {
@@ -44,7 +34,7 @@ if (-not (Test-Path $venvPython)) {
 & $venvPython -m pip install -r requirements.txt --quiet --disable-pip-version-check
 if ($LASTEXITCODE -ne 0) { Fail 'pip install -r requirements.txt failed.' }
 
-# 3. Environment files ------------------------------------------------------------
+# 3. Environment files
 Step 3 'Preparing .env files...'
 if (-not (Test-Path '.env')) {
   Copy-Item '.env.example' '.env'
@@ -62,7 +52,7 @@ if (-not (Test-Path 'frontend\.env')) {
 }
 $needsPassword = Select-String -Path '.env' -Pattern 'YOUR_POSTGRES_PASSWORD' -Quiet
 
-# 4. Database ---------------------------------------------------------------------
+# 4. Database
 if ($SkipDatabase) {
   Step 4 'Skipping the database step (-SkipDatabase).'
 } elseif ($needsPassword) {
@@ -76,7 +66,7 @@ if ($SkipDatabase) {
   if ($LASTEXITCODE -ne 0) { Fail 'Seeding demo data failed.' }
 }
 
-# 5. Frontend dependencies --------------------------------------------------------------
+# 5. Frontend dependencies
 Step 5 'Installing frontend dependencies (npm install)...'
 Push-Location frontend
 npm install --no-audit --no-fund

@@ -78,7 +78,7 @@ def _check_window(start, end, label: str) -> None:
         raise HTTPException(status_code=400, detail=f"{label}: end date must be on or after start date")
 
 
-# --- Products & variants ----------------------------------------------------
+# Products & variants
 @router.get("/products", response_model=list[ProductResponse])
 def list_products(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     query = db.query(Product)
@@ -133,7 +133,7 @@ def delete_variant(variant_id: int, db: Session = Depends(get_db), _: User = Dep
     _delete(db, _get_or_404(db, ProductVariant, variant_id, "Variant"))
 
 
-# --- Plans --------------------------------------------------------------------
+# Plans
 @router.get("/plans", response_model=list[PlanResponse])
 def list_plans(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     return db.query(Plan).order_by(Plan.name).all()
@@ -161,7 +161,7 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db), _: User = Depends(a
     _delete(db, _get_or_404(db, Plan, plan_id, "Plan"))
 
 
-# --- Tax rules ------------------------------------------------------------------
+# Tax rules
 @router.get("/tax-rules", response_model=list[TaxRuleResponse])
 def list_tax_rules(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     return db.query(TaxRule).order_by(TaxRule.name).all()
@@ -192,7 +192,7 @@ def delete_tax_rule(tax_id: int, db: Session = Depends(get_db), _: User = Depend
     _delete(db, tax, archive)
 
 
-# --- Discount rules (admin-only creation) -----------------------------------------
+# Discount rules (admin-only creation)
 @router.get("/discount-rules", response_model=list[DiscountRuleResponse])
 def list_discount_rules(db: Session = Depends(get_db), _: User = Depends(staff_or_admin)):
     return db.query(DiscountRule).order_by(DiscountRule.name).all()
@@ -224,7 +224,7 @@ def delete_discount_rule(rule_id: int, db: Session = Depends(get_db), _: User = 
     _delete(db, _get_or_404(db, DiscountRule, rule_id, "Discount rule"))
 
 
-# --- Quotation templates -------------------------------------------------------------
+# Quotation templates
 def template_detail(db: Session, template: QuotationTemplate) -> dict:
     plan = db.get(Plan, template.plan_id)
     lines = []

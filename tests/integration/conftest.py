@@ -95,7 +95,7 @@ class Api:
         self._tokens: dict[str, str] = {}
         self._catalog = None
 
-    # --- auth ---------------------------------------------------------------
+    # auth
     def login(self, email, password=PASSWORD):
         return self.c.post("/api/auth/login", json={"email": email, "password": password})
 
@@ -126,7 +126,7 @@ class Api:
         return SimpleNamespace(id=body["user"]["id"], email=email,
                                headers={"Authorization": f"Bearer {body['access_token']}"})
 
-    # --- seeded catalog -------------------------------------------------------
+    # seeded catalog
     @property
     def catalog(self):
         if self._catalog is None:
@@ -144,7 +144,7 @@ class Api:
             )
         return self._catalog
 
-    # --- subscriptions ----------------------------------------------------------
+    # subscriptions
     def transition(self, sub_id, target, headers=None):
         return self.c.post(f"/api/subscriptions/{sub_id}/transition", headers=headers or self.staff,
                            json={"target_status": target})

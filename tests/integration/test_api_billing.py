@@ -11,7 +11,7 @@ def _invoices_for(api, sub_id):
     return api.c.get(f"/api/invoices?subscription_id={sub_id}", headers=api.staff).json()
 
 
-# --- invoices -----------------------------------------------------------------------------------
+# invoices
 def test_manual_invoice_starts_as_draft_with_filled_in_snapshot_lines(api):
     sub = api.active_from_template(api.new_customer().id)
     invoice = api.invoice(sub["id"])
@@ -74,7 +74,7 @@ def test_discount_stops_once_its_usage_limit_is_reached(api):
     assert second["total_discount"] == pytest.approx(12800)
 
 
-# --- payments ---------------------------------------------------------------------------------------
+# payments
 def test_partial_then_full_payment(api):
     customer = api.new_customer()
     sub = api.active_from_template(customer.id)
@@ -107,7 +107,7 @@ def test_partial_then_full_payment(api):
     assert api.c.get(f"/api/invoices/{invoice['id']}", headers=customer.headers).json()["status"] == "PAID"
 
 
-# --- Billing Day ---------------------------------------------------------------------------------------
+# Billing Day
 def test_billing_day_bills_each_due_subscription_exactly_once(api):
     sub = api.active_from_template(api.new_customer().id)
     today = date.today().isoformat()

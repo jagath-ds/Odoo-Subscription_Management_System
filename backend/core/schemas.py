@@ -29,9 +29,7 @@ class APIModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# --------------------------------------------------------------------------
 # Authentication and users
-# --------------------------------------------------------------------------
 class LoginRequest(BaseModel):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=72)
@@ -89,9 +87,7 @@ class CustomerResponse(BaseModel):
     company: str
 
 
-# --------------------------------------------------------------------------
 # Catalog
-# --------------------------------------------------------------------------
 class ProductCreate(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     product_type: ProductType
@@ -201,9 +197,7 @@ class PlanResponse(APIModel):
     can_renew: bool
 
 
-# --------------------------------------------------------------------------
 # Quotation templates
-# --------------------------------------------------------------------------
 class QuotationTemplateLineCreate(BaseModel):
     product_id: int
     variant_id: Optional[int] = None
@@ -236,9 +230,7 @@ class QuotationTemplateDetail(BaseModel):
     lines: list[QuotationTemplateLineDetail] = []
 
 
-# --------------------------------------------------------------------------
 # Subscriptions (Contract A)
-# --------------------------------------------------------------------------
 class SubscriptionLineCreate(BaseModel):
     product_id: int
     variant_id: Optional[int] = None
@@ -343,9 +335,7 @@ class SubscriptionListItem(BaseModel):
     grand_total: Money
 
 
-# --------------------------------------------------------------------------
 # Invoices and payments (Contract B)
-# --------------------------------------------------------------------------
 class PaymentCreate(BaseModel):
     invoice_id: int
     payment_method: PaymentMethod
@@ -408,9 +398,7 @@ class ReminderResponse(BaseModel):
     to: str
 
 
-# --------------------------------------------------------------------------
 # Billing day and analytics (Contract C)
-# --------------------------------------------------------------------------
 class BillingRunRequest(BaseModel):
     today: Optional[date] = None
 

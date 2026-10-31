@@ -158,9 +158,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     return user
 
 
-# ---------------------------------------------------------------------------
 # Staff team (admin only) and customer directory (staff/admin)
-# ---------------------------------------------------------------------------
 @team_router.get("/team/staff", response_model=list[UserResponse])
 def list_staff(db: Session = Depends(get_db), _: User = Depends(admin_only)):
     return (

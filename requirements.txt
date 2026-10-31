@@ -1,29 +1,20 @@
-# BrightLoop Subscription ERP - backend dependencies (Python 3.11+, tested on 3.13)
-# Install inside the project virtual environment:
-#   python -m venv venv
-#   Windows:   venv\Scripts\activate      Mac/Linux:  source venv/bin/activate
-#   pip install -r requirements.txt
+# Python 3.11+. Install inside venv: pip install -r requirements.txt
 
-# Web framework & server
 fastapi==0.162.0
 uvicorn[standard]==0.54.0
 pydantic==2.14.2
 email-validator==2.3.0
 python-multipart==0.0.32
 
-# Database (PostgreSQL via psycopg 3)
 SQLAlchemy==2.1.6
 psycopg[binary]==3.3.6
 
-# Auth & security
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 
-# Configuration & business-logic engine
 python-dotenv==1.2.4
 python-dateutil==3.0.0
 
-# Testing
 pytest==9.2.0
 httpx==0.28.1

@@ -45,7 +45,7 @@ def _overdue_filter(today: date):
     )
 
 
-# --- Invoices -------------------------------------------------------------------
+# Invoices
 @router.get("/invoices", response_model=list[InvoiceListItem])
 def list_invoices(
     status: Optional[InvoiceStatus] = None,  # noqa: A002 - matches the frontend query param
@@ -145,7 +145,7 @@ def print_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = D
     )
 
 
-# --- Payments -------------------------------------------------------------------
+# Payments
 @router.get("/payments", response_model=list[PaymentListItem])
 def list_payments(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     query = (
@@ -185,7 +185,7 @@ def record_payment(payload: PaymentCreate, db: Session = Depends(get_db), user: 
     return invoice_detail(db, invoice)
 
 
-# --- Billing Day ------------------------------------------------------------------
+# Billing Day
 @router.post("/billing/batch", response_model=BillingRunReport, tags=["billing day"])
 def billing_batch(payload: BillingRunRequest, db: Session = Depends(get_db), _: User = Depends(staff_or_admin)):
     """Generate invoices for every due ACTIVE subscription. Safe to run twice:

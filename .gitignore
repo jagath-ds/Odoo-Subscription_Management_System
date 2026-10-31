@@ -1,8 +1,4 @@
-# ==============================================================================
-# BrightLoop Subscription ERP - .gitignore
-# ==============================================================================
-
-# --- Secrets & local environment -------------------------------------------------
+# Secrets
 .env
 .env.*
 frontend/.env
@@ -10,7 +6,7 @@ frontend/.env.*
 !.env.example
 !frontend/.env.example
 
-# --- Python ------------------------------------------------------------------------
+# Python
 venv/
 .venv/
 env/
@@ -28,7 +24,7 @@ htmlcov/
 *.db
 *.sqlite3
 
-# --- Node / frontend -----------------------------------------------------------------
+# Node / frontend
 node_modules/
 dist/
 dist-ssr/
@@ -40,7 +36,7 @@ yarn-error.log*
 pnpm-debug.log*
 coverage/
 
-# --- Tooling, editors & OS --------------------------------------------------------------
+# Tooling, editors & OS
 .claude/
 .vscode/*
 !.vscode/extensions.json
