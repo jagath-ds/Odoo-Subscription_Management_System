@@ -13,27 +13,28 @@ without guessing. Read this once; it takes about five minutes.
 | `docs/` | Phase 1 blueprint (HTML + PDF) | Member 1/3 |
 | `setup.cmd` / `.ps1` / `.sh` | One-command install + dev server | Member 3 |
 
-The FastAPI backend is **not in this repo yet**. When it lands, it goes in `backend/` with its own
-virtual environment and `backend/requirements.txt`.
+### Virtual Environments (`venv`), Dependencies & `.env`
 
-### About "venv" and "requirements.txt"
+To keep development clean, isolated, and secure across both frontend and backend teammates:
 
-* This is a **Node.js** app, so there is no Python venv. The equivalent is `frontend/node_modules`:
-  dependencies are installed **inside the project folder**, never globally, and they are git-ignored.
-  `setup.cmd` creates it for you.
-* The equivalent of `requirements.txt` is **`frontend/package.json` + `frontend/package-lock.json`**.
-  The lockfile pins exact versions, so `npm ci` gives everyone the same install.
-* If you are working on the Python backend, create a venv and a requirements file there:
+1. **Python Virtual Environment (`venv`)**:
+   Backend dependencies are defined in root `requirements.txt`. Always work inside a virtual environment:
+   ```bash
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1    # Windows PowerShell
+   venv\Scripts\activate.bat      # Windows CMD
+   source venv/bin/activate       # macOS / Linux
+   pip install -r requirements.txt
+   ```
+   Do **not** commit `venv/`, `.venv/`, or `__pycache__/` — the root `.gitignore` already excludes them.
 
-  ```bash
-  cd backend
-  python -m venv .venv
-  .venv\Scripts\activate        # Windows
-  source .venv/bin/activate     # macOS / Linux
-  pip install -r requirements.txt
-  ```
+2. **Frontend Isolated Dependencies (`node_modules`)**:
+   The frontend uses `frontend/package.json` and `frontend/package-lock.json`. Running `npm install` installs packages into `frontend/node_modules/` (project-local, git-ignored).
 
-  Do **not** commit `.venv/` or `__pycache__/` — the root `.gitignore` already excludes them.
+3. **Environment Variables & Secrets (`.env`)**:
+   Never put database passwords, secret keys, or private URLs in committed source code.
+   - Copy `.env.example` to `.env` (root and `frontend/.env`).
+   - `.env` files are ignored by git; `.env.example` provides safe templates for teammates.
 
 ---
 

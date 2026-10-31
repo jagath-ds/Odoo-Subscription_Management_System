@@ -1,0 +1,39 @@
+# ==============================================================================
+# Brightloop Subscription Management System - Backend Dependencies
+# ==============================================================================
+# For Python virtual environment setup:
+#   1. python -m venv venv
+#   2. Windows:   venv\Scripts\activate
+#      Mac/Linux: source venv/bin/activate
+#   3. pip install -r requirements.txt
+# ==============================================================================
+
+# Web Framework & ASGI Server
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.28.0,<1.0.0
+
+# Data Validation & Settings Management
+pydantic>=2.6.0,<3.0.0
+pydantic-settings>=2.2.0,<3.0.0
+email-validator>=2.1.0
+
+# Database ORM & Migrations (PostgreSQL / SQLite)
+SQLAlchemy>=2.0.28,<3.0.0
+alembic>=1.13.1,<2.0.0
+psycopg2-binary>=2.9.9
+
+# Environment & Configuration (.env loader)
+python-dotenv>=1.0.1
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.9
+
+# HTTP Client & Utility
+httpx>=0.27.0
+requests>=2.31.0
+
+# Testing & Quality
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

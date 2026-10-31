@@ -58,15 +58,90 @@ The app runs at **http://127.0.0.1:5173**.
 **Prerequisites:** Node.js **22 LTS or newer** (Vite 8 + the `cn` class-merge package require it)
 and npm 10+. Check with `node -v`.
 
-### Sharing with teammates
+### Teammate Environment & Setup Guide (Virtual Environments, .env & Requirements)
 
-* **No Python venv here.** This is a Node app: dependencies install into `frontend/node_modules`
-  (project-local, git-ignored) when you run `setup.cmd`. Nothing is installed globally.
-* **No `requirements.txt` here.** The equivalents are `frontend/package.json` (what we depend on)
-  and `frontend/package-lock.json` (exact pinned versions, used by `npm ci`). The Python backend
-  will carry its own `.venv` and `backend/requirements.txt` when it is added to this repo.
-* Read **[docs/TEAM-GUIDE.md](docs/TEAM-GUIDE.md)** for a folder map, how to add a page, how to add
-  an API call, conventions, git workflow and troubleshooting.
+This project strictly adheres to isolated virtual environments, protected environment variables, and pinned dependency files.
+
+#### 1. Python Virtual Environment (`venv`) & `requirements.txt` (Backend Teammates)
+
+Always run Python backend services inside an isolated virtual environment (`venv`) to avoid polluting global Python packages:
+
+```bash
+# Step 1: Create the virtual environment
+python -m venv venv
+
+# Step 2: Activate the virtual environment
+# On Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# On Windows (Command Prompt):
+venv\Scripts\activate.bat
+# On macOS / Linux:
+source venv/bin/activate
+
+# Step 3: Install all required backend libraries inside the venv
+pip install -r requirements.txt
+```
+
+> **Note:** The `venv/` folder is included in `.gitignore` so your installed libraries are never committed to git.
+
+#### 2. Node.js Local Dependencies (Frontend Teammates)
+
+For the React frontend, Node.js manages local isolated packages inside `frontend/node_modules/` (the Node equivalent of `venv`):
+
+```bash
+cd frontend
+npm install        # or `npm ci` for exact lockfile installation
+npm run dev        # starts frontend at http://127.0.0.1:5173
+```
+
+> **Note:** `frontend/node_modules/` and `frontend/dist/` are also strictly git-ignored.
+
+#### 3. Environment Variables (`.env`) & Privacy Protection
+
+**Private credentials, API URLs, database connection strings, and secret keys must NEVER be hardcoded in code or pushed to Git.**
+
+- Both `.env` and `frontend/.env` are ignored by `.gitignore`.
+- Template files with safe placeholder defaults (`.env.example` and `frontend/.env.example`) are provided in the repo.
+
+**Setup Instructions:**
+```bash
+# 1. Root environment file (used for backend and shared settings)
+copy .env.example .env       # Windows
+cp .env.example .env         # macOS / Linux
+
+# 2. Frontend environment file (used by Vite)
+cd frontend
+copy .env.example .env       # Windows
+cp .env.example .env         # macOS / Linux
+```
+
+#### 4. Code Examples for Teammates: How to Access Variables in Code
+
+**Example A: Python (FastAPI / Backend)**
+```python
+import os
+from dotenv import load_dotenv
+
+# Load variables from .env file
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./brightloop.db")
+SECRET_KEY = os.getenv("SECRET_KEY", "default-dev-secret")
+API_PORT = int(os.getenv("API_PORT", 8000))
+
+print(f"Connecting to database at {DATABASE_URL} on port {API_PORT}")
+```
+
+**Example B: TypeScript / React (Frontend)**
+```typescript
+// Vite exposes environment variables prefixed with VITE_ on import.meta.env
+const useMock = import.meta.env.VITE_USE_MOCK === "true";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+console.log(`Frontend running in ${useMock ? "mock" : "live"} mode targeting ${apiBaseUrl}`);
+```
+
+For complete architectural details, see **[docs/TEAM-GUIDE.md](docs/TEAM-GUIDE.md)**.
 
 ---
 
