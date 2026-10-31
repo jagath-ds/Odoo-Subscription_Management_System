@@ -1,5 +1,11 @@
 import type { AppNotification, DemoAccount, Role, SessionUser } from '@/types/contracts'
-import { ApiError, type LoginInput, type ResetLinkResult, type SignupInput } from './types'
+import {
+  ApiError,
+  type AuthPayload,
+  type LoginInput,
+  type ResetLinkResult,
+  type SignupInput,
+} from './types'
 
 /**
  * Live API branch. Member 4 wires this to FastAPI; paths mirror the shared
@@ -7,6 +13,45 @@ import { ApiError, type LoginInput, type ResetLinkResult, type SignupInput } fro
  */
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+const TOKEN_KEY = 'brightloop.token'
+
+export function getAuthToken(): string | null {
+  try {
+    return window.sessionStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setAuthToken(token: string | null): void {
+  try {
+    if (token) {
+      window.sessionStorage.setItem(TOKEN_KEY, token)
+    } else {
+      window.sessionStorage.removeItem(TOKEN_KEY)
+    }
+  } catch {
+    // Storage can be unavailable (private mode); requests just go unauthenticated.
+  }
+}
+
+function isAuthPayload(value: AuthPayload | SessionUser): value is AuthPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as AuthPayload).access_token === 'string' &&
+    typeof (value as AuthPayload).user === 'object' &&
+    (value as AuthPayload).user !== null
+  )
+}
+
+function acceptAuth(payload: AuthPayload | SessionUser): SessionUser {
+  if (isAuthPayload(payload)) {
+    setAuthToken(payload.access_token)
+    return payload.user
+  }
+  return payload
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!BASE_URL) {
@@ -16,12 +61,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     )
   }
 
+  const token = getAuthToken()
+
   let response: Response
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
     })
@@ -30,6 +78,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
+    if (response.status === 401) setAuthToken(null)
     const detail = await response
       .json()
       .then((body: unknown) => (typeof body === 'object' && body !== null && 'detail' in body
@@ -43,17 +92,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function login(input: LoginInput): Promise<SessionUser> {
-  return request<SessionUser>('/api/auth/login', {
+  const payload = await request<AuthPayload | SessionUser>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify(input),
   })
+  return acceptAuth(payload)
 }
 
 export async function signup(input: SignupInput): Promise<SessionUser> {
-  return request<SessionUser>('/api/auth/signup', {
+  const payload = await request<AuthPayload | SessionUser>('/api/auth/signup', {
     method: 'POST',
     body: JSON.stringify(input),
   })
+  return acceptAuth(payload)
+}
+
+export async function logout(): Promise<void> {
+  setAuthToken(null)
 }
 
 export async function requestPasswordReset(email: string): Promise<ResetLinkResult> {

@@ -57,6 +57,10 @@ export async function signup(input: SignupInput): Promise<SessionUser> {
   return toSession(user)
 }
 
+export async function logout(): Promise<void> {
+  await sleep(20)
+}
+
 export async function requestPasswordReset(email: string): Promise<ResetLinkResult> {
   await latency()
   await sleep(500)

@@ -27,6 +27,10 @@ export function signup(input: SignupInput): Promise<SessionUser> {
   return route(() => mock.signup(input), () => live.signup(input))
 }
 
+export function logout(): Promise<void> {
+  return route(() => mock.logout(), () => live.logout())
+}
+
 export function requestPasswordReset(email: string): Promise<ResetLinkResult> {
   return route(() => mock.requestPasswordReset(email), () => live.requestPasswordReset(email))
 }

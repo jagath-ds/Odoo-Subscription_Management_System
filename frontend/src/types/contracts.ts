@@ -35,8 +35,8 @@ export interface User {
   email: string
   full_name: string
   role: Role
-  reset_token: string | null
-  created_at: DateStr
+  /** ISO timestamp from the API — not a calendar date. */
+  created_at: string
 }
 
 export interface Product {
@@ -72,7 +72,7 @@ export interface DiscountRule {
   scope: DiscountScope
   min_qty: number
   min_purchase: number
-  valid_from: DateStr
+  valid_from: DateStr | null
   valid_until: DateStr | null
   max_uses: number | null
   current_uses: number
@@ -84,7 +84,7 @@ export interface Plan {
   billing_frequency: BillingFrequency
   plan_price: number
   min_qty: number
-  available_from: DateStr
+  available_from: DateStr | null
   available_until: DateStr | null
   auto_close: boolean
   can_close_early: boolean
@@ -115,7 +115,7 @@ export interface Subscription {
   discount_id: number | null
   status: SubscriptionStatus
   start_date: DateStr
-  next_billing_date: DateStr
+  next_billing_date: DateStr | null
   expiry_date: DateStr | null
   paused_at: DateStr | null
   payment_terms_days: number
@@ -126,7 +126,7 @@ export interface SubscriptionLine {
   subscription_id: number
   product_id: number
   variant_id: number | null
-  tax_id: number
+  tax_id: number | null
   discount_id: number | null
   quantity: number
   unit_price: number

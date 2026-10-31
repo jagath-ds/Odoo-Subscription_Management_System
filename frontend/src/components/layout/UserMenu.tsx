@@ -25,7 +25,7 @@ import {
 import { initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/mocks/store/AppStore'
-import { resetDemoData } from '@/services/api'
+import { logout, resetDemoData } from '@/services/api'
 
 export function UserMenu({ collapsed }: { collapsed: boolean }) {
   const { state, dispatch, refreshNotifications } = useApp()
@@ -36,6 +36,7 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
   if (!session) return null
 
   function handleSignOut() {
+    void logout()
     dispatch({ type: 'CLEAR_SESSION' })
     setConfirmOpen(false)
     navigate('/login')

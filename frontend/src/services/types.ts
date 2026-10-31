@@ -39,9 +39,21 @@ export interface ResetLinkResult {
   email: string
 }
 
+/**
+ * Shape returned by `POST /api/auth/login` and `/api/auth/signup` once the
+ * backend is live. The adapter also accepts a bare `SessionUser` so the API
+ * can evolve without breaking the client.
+ */
+export interface AuthPayload {
+  access_token: string
+  token_type: string
+  user: SessionUser
+}
+
 export interface AuthApi {
   login(input: LoginInput): Promise<SessionUser>
   signup(input: SignupInput): Promise<SessionUser>
+  logout(): Promise<void>
   requestPasswordReset(email: string): Promise<ResetLinkResult>
   getDemoAccounts(): Promise<DemoAccount[]>
   listNotifications(): Promise<AppNotification[]>
