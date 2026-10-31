@@ -3,6 +3,9 @@
 A short, practical guide so any teammate can clone the repo, run it, and add a page or an API call
 without guessing. Read this once; it takes about five minutes.
 
+> **Full-stack setup** (PostgreSQL, FastAPI backend, seed data, demo logins, benchmark) is in the
+> root [`README.md`](../README.md). This guide covers the frontend workflow and conventions.
+
 ---
 
 ## 1. What this repo contains
@@ -10,8 +13,11 @@ without guessing. Read this once; it takes about five minutes.
 | Path | What it is | Owner |
 | --- | --- | --- |
 | `frontend/` | React + Vite app (this guide) | Member 3 |
-| `docs/` | Phase 1 blueprint (HTML + PDF) | Member 1/3 |
-| `setup.cmd` / `.ps1` / `.sh` | One-command install + dev server | Member 3 |
+| `backend/` | FastAPI API (`core/`, `engine/`, `services/`, `api/`) | Members 1, 2, 4 |
+| `scripts/` | `init_db.py` (create/reset DB) and the end-to-end smoke test | Member 4 |
+| `tests/` | Engine unit tests (pytest) | Member 2 |
+| `docs/` | Problem statement, team blueprint, this guide | All |
+| `setup.cmd` / `.ps1` / `.sh` | One-command full-stack install (venv, `.env` files, database, seed, npm) | Member 4 |
 
 ### Virtual Environments (`venv`), Dependencies & `.env`
 
@@ -40,33 +46,33 @@ To keep development clean, isolated, and secure across both frontend and backend
 
 ## 2. First-time setup
 
-**Prerequisite:** Node.js **22 LTS or newer** (`node -v`). No global npm packages needed.
+**Prerequisites:** Node.js **22 LTS or newer**, Python **3.11+**, PostgreSQL **15+**.
 
-Windows:
+Run the setup script from the repository root. It creates `venv`, installs `requirements.txt`,
+copies both `.env.example` files, initialises the database, seeds demo data and runs `npm install`:
 
 ```bat
 setup.cmd
 ```
 
-macOS / Linux:
-
 ```bash
 ./setup.sh
 ```
 
-The script installs dependencies, copies `frontend/.env.example` to `frontend/.env` if missing,
-and starts the app at <http://127.0.0.1:5173>.
-
-Manual alternative:
+Then start both servers (two terminals, from the repository root):
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
+venv\Scripts\python -m uvicorn backend.main:app --reload --port 8000   # Windows
+venv/bin/python -m uvicorn backend.main:app --reload --port 8000       # macOS / Linux
+
+cd frontend && npm run dev                                              # http://localhost:5173
 ```
 
-Demo logins are on the sign-in screen (password `Brightloop#2026` for all three roles).
+Frontend-only alternative (offline mock data, no backend needed): set `VITE_USE_MOCK=true` in
+`frontend/.env`, then `cd frontend && npm install && npm run dev`.
+
+Demo logins (live backend): `admin@brightloop.local`, `staff@brightloop.local`,
+`customer@brightloop.local`, all with password `Brightloop@123`.
 
 ---
 
@@ -106,8 +112,10 @@ frontend/src/
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `VITE_USE_MOCK` | `true` | `true` = in-memory demo data, `false` = call the real API |
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend base URL, used only when mock is off |
+| `VITE_API_BASE_URL` | `http://127.0.0.1:8000` | FastAPI backend base URL (no trailing slash) |
+| `VITE_USE_MOCK` | `false` | `false` = live FastAPI backend, `true` = in-memory demo data (offline) |
+
+The frontend origin (`http://localhost:5173`) must be listed in `CORS_ORIGINS` in the root `.env`.
 
 Rules:
 
@@ -240,7 +248,7 @@ only step 4 changes.
 
 ```bash
 git clone <repo-url>
-git checkout front-end
+git checkout main
 git pull
 
 git checkout -b feature/credit-notes
@@ -251,9 +259,10 @@ git commit -m "feat(frontend): credit notes list"
 git push -u origin feature/credit-notes
 ```
 
-* `main` holds merged, reviewed work; `front-end` is the integration branch for this member.
+* `main` holds the integrated, working full stack; `test/integration` is the staging branch.
+  `backend`, `features` and `front-end` are kept as the original per-member branches.
 * One feature per branch, small commits, `npm run build` green before pushing.
-* Never commit `node_modules/`, `dist/`, `.env`, `.venv/`, or editor folders.
+* Never commit `node_modules/`, `dist/`, `.env`, `frontend/.env`, `venv/`, or editor folders.
 
 ---
 
@@ -262,8 +271,10 @@ git push -u origin feature/credit-notes
 | Symptom | Fix |
 | --- | --- |
 | `npm ci` fails after pulling | `rm -rf node_modules package-lock.json && npm install` |
-| Port 5173 in use | `npm run dev -- --port 5174` |
-| Blank page / odd data | Account menu → **Reset demo data**, or clear `sessionStorage` |
-| "VITE_API_BASE_URL is not set" | You set `VITE_USE_MOCK=false`; add the URL to `.env` and restart |
+| Port 5173 in use | `npm run dev -- --port 5174`, and add `http://localhost:5174` to `CORS_ORIGINS` in the root `.env` |
+| "Could not reach the Brightloop API" | Start the backend on port 8000 and check `VITE_API_BASE_URL` in `frontend/.env` |
+| Blank page / odd data (mock mode) | Account menu → **Reset demo data**, or clear `sessionStorage` |
+| Messy live data | `python scripts/init_db.py --reset` then `python -m backend.seed` (root, inside `venv`) |
+| "VITE_API_BASE_URL is not set" | Add the URL to `frontend/.env` and restart `npm run dev` |
 | Node version errors | Install Node 22 LTS; Vite 8 and `cn` require it |
 | Menu item missing | Check `roles` in `src/types/nav.ts` for the signed-in role |
