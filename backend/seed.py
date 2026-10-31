@@ -174,6 +174,22 @@ def seed_sample_activity(db, acme, nova, annual, monthly, erp, odoo, whatsapp, g
     _subscription(db, "SUB-DEMO-0003", acme, annual, SubscriptionStatus.PAUSED, today - timedelta(days=40),
                   [(erp, None, 5)], gst, paused_at=today - timedelta(days=7))
     _subscription(db, "SUB-DEMO-0004", nova, monthly, SubscriptionStatus.QUOTATION, today, [(erp, odoo, 2)], gst)
+
+    # Due today: "Run Billing Day" bills it once, a second run skips it (idempotency demo).
+    due = _subscription(db, "SUB-DEMO-0005", nova, monthly, SubscriptionStatus.ACTIVE, today - timedelta(days=31),
+                        [(erp, None, 4)], gst)
+    first = build_invoice(db, due, f"{due.sub_number}:{due.start_date.isoformat()}", due.start_date, status=InvoiceStatus.PAID)
+    db.flush()
+    first.amount_paid = first.grand_total
+    db.add(Payment(invoice_id=first.id, payment_method=PaymentMethod.BANK_TRANSFER, amount=first.grand_total,
+                   payment_date=due.start_date + timedelta(days=2), note="Seeded payment"))
+    due.next_billing_date = today
+
+    # Expired yesterday on an auto-close plan: Billing Day closes it automatically.
+    expired = _subscription(db, "SUB-DEMO-0006", acme, annual, SubscriptionStatus.ACTIVE, today - timedelta(days=366),
+                            [(erp, None, 5)], gst)
+    expired.expiry_date = today - timedelta(days=1)
+    expired.next_billing_date = expired.expiry_date
     db.flush()
 
 

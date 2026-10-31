@@ -1,12 +1,14 @@
 """Create the PostgreSQL database (if missing) and all tables, indexes and constraints.
 
 Usage (inside the venv, from the repository root):
-    python scripts/init_db.py
+    python scripts/init_db.py            # create database + schema if missing (safe to re-run)
+    python scripts/init_db.py --reset    # DROP and recreate the database (all data is lost)
 
 Reads DATABASE_URL from .env. Connects to the server's default `postgres`
-database with AUTOCOMMIT to run CREATE DATABASE, then builds the schema.
+database with AUTOCOMMIT to run CREATE/DROP DATABASE, then builds the schema.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -18,7 +20,7 @@ from sqlalchemy.engine import make_url  # noqa: E402
 from backend.core.database import DATABASE_URL  # noqa: E402
 
 
-def ensure_database() -> None:
+def ensure_database(reset: bool = False) -> None:
     url = make_url(DATABASE_URL)
     if not url.drivername.startswith("postgresql"):
         print(f"Non-PostgreSQL URL ({url.drivername}); skipping CREATE DATABASE.")
@@ -26,6 +28,11 @@ def ensure_database() -> None:
     admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
     with admin.connect() as conn:
         exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": url.database}).scalar()
+        if exists and reset:
+            # WITH (FORCE) (PostgreSQL 13+) also disconnects a running API.
+            conn.execute(text(f'DROP DATABASE "{url.database}" WITH (FORCE)'))
+            print(f"Dropped database '{url.database}' (--reset).")
+            exists = False
         if exists:
             print(f"Database '{url.database}' already exists.")
         else:
@@ -50,5 +57,8 @@ def create_schema() -> None:
 
 
 if __name__ == "__main__":
-    ensure_database()
+    parser = argparse.ArgumentParser(description="Create the BrightLoop PostgreSQL database and schema.")
+    parser.add_argument("--reset", action="store_true", help="drop and recreate the database (all data is lost)")
+    args = parser.parse_args()
+    ensure_database(reset=args.reset)
     create_schema()
