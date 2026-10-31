@@ -1,19 +1,25 @@
-"""Subscription creation, access, and lifecycle endpoints."""
+"""Quotations & subscriptions (Contract A): creation, lifecycle, add-ons, invoicing."""
 
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 from uuid import uuid4
 
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from ..core.auth import get_current_user, require_role
+from ..core.auth import get_current_user, staff_or_admin
 from ..core.database import get_db
 from ..core.models import (
     DiscountRule,
+    DiscountScope,
     Plan,
     Product,
+    ProductType,
     ProductVariant,
+    QuotationTemplate,
     Subscription,
     SubscriptionLine,
     SubscriptionStatus,
@@ -21,154 +27,263 @@ from ..core.models import (
     User,
     UserRole,
 )
-from ..core.schemas import InvoiceResponse, SubscriptionAction, SubscriptionCreate, SubscriptionResponse
-from ..engine.billing import build_invoice
-from ..engine.state_machine import apply_subscription_action, next_billing_date
-
+from ..core.schemas import (
+    CreateFromTemplate,
+    InvoiceDetail,
+    SubscriptionCreate,
+    SubscriptionDetail,
+    SubscriptionListItem,
+    ToggleAddonRequest,
+    TransitionRequest,
+)
+from ..engine import check_subscription_transition
+from ..services.invoicing import invoice_now
+from ..services.presenters import invoice_detail, subscription_detail, subscription_list
 
 router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
-staff_or_admin = require_role(UserRole.ADMIN, UserRole.STAFF)
+
+# Lifecycle moves a CUSTOMER may make on their own subscription via the portal.
+CUSTOMER_TRANSITIONS = {
+    (SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED),
+    (SubscriptionStatus.PAUSED, SubscriptionStatus.ACTIVE),
+    (SubscriptionStatus.CLOSED, SubscriptionStatus.ACTIVE),
+    (SubscriptionStatus.ACTIVE, SubscriptionStatus.CLOSED),
+}
 
 
-def _can_access_customer(current_user: User, customer_id: int) -> bool:
-    return current_user.role != UserRole.CUSTOMER or current_user.id == customer_id
-
-
-def _load_subscription_or_404(db: Session, subscription_id: int) -> Subscription:
-    subscription = db.get(Subscription, subscription_id)
-    if not subscription:
+def _load(db: Session, subscription_id: int, user: User) -> Subscription:
+    sub = db.get(Subscription, subscription_id)
+    if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
-    return subscription
+    if user.role == UserRole.CUSTOMER and sub.customer_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed to access this subscription")
+    return sub
 
 
-@router.post("", response_model=SubscriptionResponse, status_code=status.HTTP_201_CREATED)
-def create_subscription(
-    payload: SubscriptionCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if not _can_access_customer(current_user, payload.customer_id):
-        raise HTTPException(status_code=403, detail="Customers can only create their own subscriptions")
-    customer = db.get(User, payload.customer_id)
-    plan = db.get(Plan, payload.plan_id)
+def _default_tax_id(db: Session) -> Optional[int]:
+    tax = db.query(TaxRule).filter(TaxRule.is_active.is_(True)).order_by(TaxRule.id).first()
+    return tax.id if tax else None
+
+
+def _default_expiry(plan: Plan, start: date) -> date:
+    if plan.available_until and plan.available_until > start:
+        return plan.available_until
+    return start + relativedelta(years=1)
+
+
+def _validate_header(db: Session, customer_id: int, plan: Plan, start: date, expiry: Optional[date]) -> None:
+    customer = db.get(User, customer_id)
     if not customer or customer.role != UserRole.CUSTOMER:
         raise HTTPException(status_code=404, detail="Customer not found")
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan not found")
-    if plan.available_from and payload.start_date < plan.available_from:
+    if plan.available_from and start < plan.available_from:
         raise HTTPException(status_code=400, detail="Subscription starts before the plan is available")
-    if plan.available_until and payload.start_date > plan.available_until:
+    if plan.available_until and start > plan.available_until:
         raise HTTPException(status_code=400, detail="Subscription starts after the plan availability window")
-    if payload.expiry_date and payload.expiry_date < payload.start_date:
+    if expiry and expiry < start:
         raise HTTPException(status_code=400, detail="expiry_date must be on or after start_date")
-    if payload.discount_id:
-        discount = db.get(DiscountRule, payload.discount_id)
-        if not discount or discount.scope.value != "SUBSCRIPTION":
-            raise HTTPException(status_code=400, detail="Invalid subscription discount")
 
-    product_ids = {line.product_id for line in payload.lines}
-    products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()}
-    if len(products) != len(product_ids) or any(not p.is_active for p in products.values()):
-        raise HTTPException(status_code=400, detail="Every subscription line must use an active product")
 
-    variant_ids = {line.variant_id for line in payload.lines if line.variant_id is not None}
-    variants = {v.id: v for v in db.query(ProductVariant).filter(ProductVariant.id.in_(variant_ids)).all()}
-    if len(variants) != len(variant_ids):
-        raise HTTPException(status_code=400, detail="One or more product variants were not found")
-    if any(variants[line.variant_id].product_id != line.product_id for line in payload.lines if line.variant_id):
-        raise HTTPException(status_code=400, detail="A variant must belong to its selected product")
-
-    for line in payload.lines:
-        if line.tax_id and not db.get(TaxRule, line.tax_id):
-            raise HTTPException(status_code=404, detail=f"Tax rule {line.tax_id} not found")
-        if line.discount_id:
-            discount = db.get(DiscountRule, line.discount_id)
-            if not discount or discount.scope.value != "PRODUCT":
-                raise HTTPException(status_code=400, detail="Invalid product discount")
-
-    subscription = Subscription(
-        sub_number=f"SUB-{date.today():%Y%m%d}-{uuid4().hex[:6].upper()}",
-        customer_id=payload.customer_id,
-        plan_id=payload.plan_id,
-        discount_id=payload.discount_id,
-        status=SubscriptionStatus.DRAFT,
-        start_date=payload.start_date,
-        next_billing_date=next_billing_date(payload.start_date, plan.billing_frequency.value),
-        expiry_date=payload.expiry_date,
-        payment_terms_days=payload.payment_terms_days,
-    )
-    for line in payload.lines:
-        variant_extra = variants[line.variant_id].price_extra if line.variant_id else Decimal("0.00")
-        subscription.lines.append(SubscriptionLine(
-            product_id=line.product_id,
-            variant_id=line.variant_id,
-            tax_id=line.tax_id,
-            discount_id=line.discount_id,
-            quantity=line.quantity,
-            unit_price=products[line.product_id].sales_price + variant_extra,
+def _build_lines(db: Session, plan: Plan, raw_lines: list[dict], enforce_min_qty: bool = True) -> list[SubscriptionLine]:
+    default_tax = _default_tax_id(db)
+    lines, service_qty, total_qty = [], 0, 0
+    for raw in raw_lines:
+        product = db.get(Product, raw["product_id"])
+        if not product or not product.is_active:
+            raise HTTPException(status_code=400, detail=f"Product {raw['product_id']} is not an active product")
+        extra = Decimal("0.00")
+        if raw.get("variant_id"):
+            variant = db.get(ProductVariant, raw["variant_id"])
+            if not variant or variant.product_id != product.id:
+                raise HTTPException(status_code=400, detail="A variant must belong to its selected product")
+            extra = variant.price_extra or Decimal("0.00")
+        tax_id = raw.get("tax_id") or default_tax
+        if raw.get("tax_id") and not db.get(TaxRule, raw["tax_id"]):
+            raise HTTPException(status_code=404, detail=f"Tax rule {raw['tax_id']} not found")
+        if raw.get("discount_id"):
+            rule = db.get(DiscountRule, raw["discount_id"])
+            if not rule or rule.scope != DiscountScope.PRODUCT:
+                raise HTTPException(status_code=400, detail="Line discounts must be PRODUCT-scope rules")
+        quantity = int(raw.get("quantity") or 1)
+        total_qty += quantity
+        if product.product_type == ProductType.SERVICE:
+            service_qty += quantity
+        lines.append(SubscriptionLine(
+            product_id=product.id,
+            variant_id=raw.get("variant_id"),
+            tax_id=tax_id,
+            discount_id=raw.get("discount_id"),
+            quantity=quantity,
+            unit_price=(product.sales_price or Decimal("0.00")) + extra,
         ))
-    db.add(subscription)
-    db.commit()
-    db.refresh(subscription)
-    return subscription
+    seats = service_qty or total_qty
+    if enforce_min_qty and plan.min_qty and seats < plan.min_qty:
+        raise HTTPException(status_code=400, detail=f"Plan '{plan.name}' requires a minimum quantity of {plan.min_qty}")
+    return lines
 
 
-@router.get("", response_model=list[SubscriptionResponse])
+def _new_subscription(customer_id, plan, start, expiry, terms, discount_id, status_) -> Subscription:
+    return Subscription(
+        sub_number=f"SUB-{start:%Y%m}-{uuid4().hex[:6].upper()}",
+        customer_id=customer_id,
+        plan_id=plan.id,
+        discount_id=discount_id,
+        status=status_,
+        start_date=start,
+        next_billing_date=start,  # first period is billed on the start date
+        expiry_date=expiry,
+        payment_terms_days=terms,
+    )
+
+
+@router.get("", response_model=list[SubscriptionListItem])
 def list_subscriptions(
+    customer_id: Optional[int] = None,
+    status: Optional[SubscriptionStatus] = None,  # noqa: A002 - matches the frontend query param
+    q: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(Subscription)
-    if current_user.role == UserRole.CUSTOMER:
-        query = query.filter(Subscription.customer_id == current_user.id)
-    return query.order_by(Subscription.id.desc()).all()
+    if user.role == UserRole.CUSTOMER:
+        query = query.filter(Subscription.customer_id == user.id)
+    elif customer_id:
+        query = query.filter(Subscription.customer_id == customer_id)
+    if status:
+        query = query.filter(Subscription.status == status)
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.join(User, User.id == Subscription.customer_id).filter(
+            or_(Subscription.sub_number.ilike(like), User.full_name.ilike(like))
+        )
+    return subscription_list(db, query.order_by(Subscription.id.desc()).limit(500).all())
 
 
-@router.get("/{subscription_id}", response_model=SubscriptionResponse)
-def get_subscription(
-    subscription_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    subscription = _load_subscription_or_404(db, subscription_id)
-    if not _can_access_customer(current_user, subscription.customer_id):
-        raise HTTPException(status_code=403, detail="Not allowed to access this subscription")
-    return subscription
+@router.get("/{subscription_id}", response_model=SubscriptionDetail)
+def get_subscription(subscription_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return subscription_detail(db, _load(db, subscription_id, user))
 
 
-@router.post("/{subscription_id}/actions", response_model=SubscriptionResponse)
-def change_subscription_status(
-    subscription_id: int,
-    payload: SubscriptionAction,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    subscription = _load_subscription_or_404(db, subscription_id)
-    if current_user.role == UserRole.CUSTOMER:
-        if subscription.customer_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Not allowed to change this subscription")
-        if payload.action not in {"pause", "resume", "close"}:
-            raise HTTPException(status_code=403, detail="Customers may only pause, resume, or close their own subscriptions")
-    elif current_user.role not in {UserRole.ADMIN, UserRole.STAFF}:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-    plan = db.get(Plan, subscription.plan_id)
+@router.post("", response_model=SubscriptionDetail, status_code=status.HTTP_201_CREATED)
+def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_db), _: User = Depends(staff_or_admin)):
+    """Create a quotation from scratch (status DRAFT)."""
+    plan = db.get(Plan, payload.plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
-    apply_subscription_action(subscription, plan, payload.action, date.today())
+    _validate_header(db, payload.customer_id, plan, payload.start_date, payload.expiry_date)
+    if payload.discount_id:
+        rule = db.get(DiscountRule, payload.discount_id)
+        if not rule or rule.scope != DiscountScope.SUBSCRIPTION:
+            raise HTTPException(status_code=400, detail="Subscription discounts must be SUBSCRIPTION-scope rules")
+    sub = _new_subscription(
+        payload.customer_id, plan, payload.start_date,
+        payload.expiry_date or _default_expiry(plan, payload.start_date),
+        payload.payment_terms_days, payload.discount_id, SubscriptionStatus.DRAFT,
+    )
+    sub.lines = _build_lines(db, plan, [line.model_dump() for line in payload.lines])
+    db.add(sub)
     db.commit()
-    db.refresh(subscription)
-    return subscription
+    db.refresh(sub)
+    return subscription_detail(db, sub)
 
 
-@router.post("/{subscription_id}/invoice", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
-def generate_invoice(
+@router.post("/from-template", response_model=SubscriptionDetail, status_code=status.HTTP_201_CREATED)
+def create_from_template(payload: CreateFromTemplate, db: Session = Depends(get_db), _: User = Depends(staff_or_admin)):
+    """One-click quotation: plan and product lines are copied from the template."""
+    template = db.get(QuotationTemplate, payload.template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Quotation template not found")
+    plan = db.get(Plan, template.plan_id)
+    _validate_header(db, payload.customer_id, plan, payload.start_date, None)
+    raw_lines = (
+        [line.model_dump() for line in payload.lines]
+        if payload.lines
+        else [{"product_id": l.product_id, "variant_id": l.variant_id, "quantity": l.quantity} for l in template.lines]
+    )
+    sub = _new_subscription(
+        payload.customer_id, plan, payload.start_date, _default_expiry(plan, payload.start_date),
+        payload.payment_terms_days if payload.payment_terms_days is not None else template.validity_days,
+        None, SubscriptionStatus.QUOTATION,
+    )
+    sub.lines = _build_lines(db, plan, raw_lines)
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    return subscription_detail(db, sub)
+
+
+@router.post("/{subscription_id}/transition", response_model=SubscriptionDetail)
+def transition_subscription(
     subscription_id: int,
+    payload: TransitionRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(staff_or_admin),
+    user: User = Depends(get_current_user),
 ):
-    subscription = _load_subscription_or_404(db, subscription_id)
-    invoice = build_invoice(db, subscription)
-    db.add(invoice)
+    sub = _load(db, subscription_id, user)
+    target = payload.target_status
+    if user.role == UserRole.CUSTOMER and (sub.status, target) not in CUSTOMER_TRANSITIONS:
+        raise HTTPException(status_code=403, detail="Customers may only pause, resume, renew, or close their own subscriptions")
+    plan = db.get(Plan, sub.plan_id)
+    today = date.today()
+    result = check_subscription_transition(
+        current_status=sub.status.value,
+        target_status=target.value,
+        plan_flags={"can_pause": plan.can_pause, "can_close_early": plan.can_close_early, "can_renew": plan.can_renew},
+        next_billing_date=sub.next_billing_date,
+        expiry_date=sub.expiry_date,
+        paused_at=sub.paused_at,
+        today_str=today,
+    )
+    if not result["allowed"]:
+        raise HTTPException(status_code=409, detail=result["error"])
+
+    renewing = sub.status == SubscriptionStatus.CLOSED and target == SubscriptionStatus.ACTIVE
+    sub.status = SubscriptionStatus(result["next_status"])
+    sub.next_billing_date = date.fromisoformat(result["next_billing_date"]) if result["next_billing_date"] else None
+    sub.expiry_date = date.fromisoformat(result["expiry_date"]) if result["expiry_date"] else None
+    sub.paused_at = date.fromisoformat(result["paused_at"]) if result["paused_at"] else None
+    if renewing:
+        term = (sub.expiry_date - sub.start_date) if sub.expiry_date else None
+        sub.next_billing_date = today
+        if term and sub.expiry_date <= today:
+            sub.expiry_date = today + term
+    if sub.status == SubscriptionStatus.ACTIVE and sub.next_billing_date is None:
+        sub.next_billing_date = sub.start_date
     db.commit()
-    db.refresh(invoice)
-    return invoice
+    db.refresh(sub)
+    return subscription_detail(db, sub)
+
+
+@router.post("/{subscription_id}/toggle-addon", response_model=SubscriptionDetail)
+def toggle_addon(
+    subscription_id: int,
+    payload: ToggleAddonRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Customers switch add-ons on/off; the change applies from the next invoice."""
+    sub = _load(db, subscription_id, user)
+    if sub.status == SubscriptionStatus.CLOSED:
+        raise HTTPException(status_code=409, detail="Closed subscriptions cannot be changed")
+    product = db.get(Product, payload.product_id)
+    if not product or product.product_type != ProductType.ADDON or not product.is_active:
+        raise HTTPException(status_code=400, detail="Only active add-on products can be toggled")
+    existing = [l for l in sub.lines if l.product_id == product.id]
+    if payload.enabled and not existing:
+        plan = db.get(Plan, sub.plan_id)
+        # Add-ons don't count towards the plan's seat minimum.
+        raw = [{"product_id": product.id, "variant_id": payload.variant_id, "quantity": 1}]
+        line = _build_lines(db, plan, raw, enforce_min_qty=False)[0]
+        sub.lines.append(line)
+    elif not payload.enabled:
+        for line in existing:
+            sub.lines.remove(line)
+    db.commit()
+    db.refresh(sub)
+    return subscription_detail(db, sub)
+
+
+@router.post("/{subscription_id}/invoice", response_model=InvoiceDetail, status_code=status.HTTP_201_CREATED)
+def generate_invoice(subscription_id: int, db: Session = Depends(get_db), user: User = Depends(staff_or_admin)):
+    """Manually create a DRAFT invoice for the current billing period."""
+    sub = _load(db, subscription_id, user)
+    return invoice_detail(db, invoice_now(db, sub, date.today()))

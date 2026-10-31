@@ -1,15 +1,11 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set. Create a .env file before starting the API.")
+from .config import DATABASE_URL as _RAW_URL
 
 # SQLAlchemy 2.x may select different PostgreSQL drivers for a bare URL.
-# Keep the driver explicit so local and teammate environments behave alike.
+# Keep the driver explicit (psycopg 3) so every teammate's environment behaves alike.
+DATABASE_URL = _RAW_URL
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 

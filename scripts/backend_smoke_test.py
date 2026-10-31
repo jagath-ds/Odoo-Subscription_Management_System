@@ -1,107 +1,128 @@
-"""Read-only smoke test for a running BrightLoop backend.
+"""End-to-end smoke test of the core Brightloop workflows against a running API.
 
-Run with the API already started:
+Usage (API running, demo data seeded):
     python scripts/backend_smoke_test.py
 
-Override credentials when needed:
-    $env:SMOKE_EMAIL = "admin@example.com"
-    $env:SMOKE_PASSWORD = "YourPassword"
+Environment (falls back to .env / defaults):
+    SMOKE_BASE_URL   default http://<API_HOST>:<API_PORT>
+    DEMO_ADMIN_EMAIL, DEMO_STAFF_EMAIL, DEMO_PASSWORD
+
+Creates a new customer, quotation, invoices and payments each run.
 """
 
-import json
 import os
 import sys
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+import uuid
+from datetime import date, timedelta
+from pathlib import Path
+
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+BASE = os.getenv("SMOKE_BASE_URL") or f"http://{os.getenv('API_HOST', '127.0.0.1')}:{os.getenv('API_PORT', '8000')}"
+PASSWORD = os.getenv("DEMO_PASSWORD", "Brightloop@123")
+client = httpx.Client(base_url=BASE, timeout=20)
+failures = 0
 
 
-BASE_URL = os.getenv("SMOKE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
-EMAIL = os.getenv("SMOKE_EMAIL", "demo1@gmail.com")
-PASSWORD = os.getenv("SMOKE_PASSWORD", "Pass@123")
-ROLE = os.getenv("SMOKE_ROLE", "CUSTOMER").upper()
+def check(label: str, condition: bool, detail: object = "") -> None:
+    global failures
+    print(f"  [{'PASS' if condition else 'FAIL'}] {label}" + (f" -> {detail}" if not condition else ""))
+    failures += 0 if condition else 1
 
 
-def request(method: str, path: str, token: str | None = None, form: dict | None = None):
-    headers = {"Accept": "application/json"}
-    body = None
-    if form is not None:
-        body = urlencode(form).encode()
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    req = Request(f"{BASE_URL}{path}", data=body, headers=headers, method=method)
-    with urlopen(req, timeout=10) as response:
-        raw = response.read().decode()
-        return response.status, json.loads(raw) if raw else None
+def call(method: str, path: str, token: str | None = None, expected: int = 200, **kwargs):
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    response = client.request(method, path, headers=headers, **kwargs)
+    check(f"{method} {path} -> {expected}", response.status_code == expected, f"{response.status_code} {response.text[:300]}")
+    return response.json() if response.content and "json" in response.headers.get("content-type", "") else None
 
 
-def check(label: str, method: str, path: str, token: str | None = None, form: dict | None = None, expected: int = 200):
-    try:
-        status, data = request(method, path, token=token, form=form)
-    except HTTPError as exc:
-        detail = exc.read().decode(errors="replace")
-        if exc.code == expected:
-            print(f"PASS {label}: HTTP {exc.code} (expected)")
-            return {"status_code": exc.code, "detail": detail}
-        print(f"FAIL {label}: HTTP {exc.code} {detail}")
-        return None
-    except (URLError, TimeoutError, OSError) as exc:
-        print(f"FAIL {label}: backend is unreachable ({exc})")
-        return None
-    if status != expected:
-        print(f"FAIL {label}: HTTP {status}, expected {expected}")
-        return None
-    print(f"PASS {label}: HTTP {status}")
-    return data
+def login(email: str) -> str:
+    return call("POST", "/api/auth/login", json={"email": email, "password": PASSWORD})["access_token"]
 
 
-def main() -> int:
-    failures = 0
-    if check("health", "GET", "/api/health") is None:
-        return 1
+print(f"Brightloop smoke test against {BASE}")
+call("GET", "/api/health")
 
-    login = check(
-        f"{ROLE.lower()} login",
-        "POST",
-        "/api/auth/login",
-        form={"username": EMAIL, "password": PASSWORD},
-    )
-    if not login or not login.get("access_token"):
-        return 1
-    token = login["access_token"]
+print("\n1. Sign-up rules")
+email = f"smoke-{uuid.uuid4().hex[:6]}@example.com"
+call("POST", "/api/auth/signup", expected=400, json={"email": email, "password": "Short@1a", "full_name": "Too Short"})
+signup = call("POST", "/api/auth/signup", expected=201, json={"email": email, "password": PASSWORD, "full_name": "Smoke Test Co"})
+check("signup creates a CUSTOMER", signup["user"]["role"] == "CUSTOMER")
+call("POST", "/api/auth/signup", expected=409, json={"email": email.upper(), "password": PASSWORD, "full_name": "Dup"})
+call("POST", "/api/auth/forgot-password", json={"email": email})
+customer_token, customer_id = signup["access_token"], signup["user"]["id"]
+call("POST", "/api/team/staff", customer_token, expected=403, json={"email": "x@y.z", "password": PASSWORD, "full_name": "Nope", "role": "STAFF"})
 
-    current = check("current user", "GET", "/api/auth/me", token)
-    if current is None:
-        failures += 1
-    elif current.get("role") != ROLE:
-        print(f"FAIL current user: expected role {ROLE}, got {current.get('role')}")
-        failures += 1
+admin = login(os.getenv("DEMO_ADMIN_EMAIL", "admin@brightloop.local"))
+staff = login(os.getenv("DEMO_STAFF_EMAIL", "staff@brightloop.local"))
+call("POST", "/api/products", staff, expected=403, json={"name": "x", "product_type": "SERVICE", "sales_price": 1, "cost_price": 1})
 
-    paths = [
-        ("products endpoint", "/api/catalog/products"),
-        ("plans endpoint", "/api/catalog/plans"),
-        ("tax rules endpoint", "/api/catalog/taxes"),
-        ("discount rules endpoint", "/api/catalog/discounts"),
-        ("quotation templates endpoint", "/api/catalog/templates"),
-        ("subscriptions endpoint", "/api/subscriptions"),
-        ("invoices endpoint", "/api/invoices"),
-    ]
-    for label, path in paths:
-        expected = 403 if ROLE == "CUSTOMER" and label in {"discount rules endpoint", "quotation templates endpoint"} else 200
-        if check(label, "GET", path, token, expected=expected) is None:
-            failures += 1
+print("\n2. Catalog (+560 variant, GST, discount)")
+products = call("GET", "/api/products", admin)
+erp = next(p for p in products if p["name"] == "Brightloop Cloud ERP")
+odoo = next(v for v in erp["variants"] if v["attribute_value"] == "Odoo")
+check("Odoo variant adds 560", odoo["price_extra"] == 560)
+templates = call("GET", "/api/quotation-templates", staff)
+template = next(t for t in templates if t["name"] == "Enterprise Annual Offer")
 
-    overdue_expected = 403 if ROLE == "CUSTOMER" else 200
-    if check("overdue summary endpoint", "GET", "/api/invoices/summary/overdue", token, expected=overdue_expected) is None:
-        failures += 1
+print("\n3. Quotation from template -> lifecycle")
+start = date.today().isoformat()
+sub = call("POST", "/api/subscriptions/from-template", staff, expected=201,
+           json={"template_id": template["id"], "customer_id": customer_id, "start_date": start})
+check("starts as QUOTATION", sub["status"] == "QUOTATION")
+check("unit price = 2000 + 560", sub["lines"][0]["unit_price"] == 2560)
+erp_line = sub["lines"][0]
+check("10% bulk discount applied (qty 10)", erp_line["discount_applied"] and erp_line["discount_amount"] == 2560.0)
+check("18% GST on discounted amount", erp_line["tax_amount"] == round(23040 * 0.18, 2))
+sid = sub["id"]
+call("POST", f"/api/subscriptions/{sid}/transition", staff, expected=409, json={"target_status": "ACTIVE"})
+for target in ("CONFIRMED", "ACTIVE"):
+    sub = call("POST", f"/api/subscriptions/{sid}/transition", staff, json={"target_status": target})
+check("now ACTIVE", sub["status"] == "ACTIVE")
+call("POST", f"/api/subscriptions/{sid}/transition", customer_token, expected=409, json={"target_status": "CLOSED"})
+call("GET", f"/api/subscriptions/{sid}", customer_token)
 
-    if failures:
-        print(f"\nSmoke test failed: {failures} check(s) failed.")
-        return 1
-    print("\nSmoke test passed: backend is reachable and core read/auth endpoints are working.")
-    return 0
+print("\n4. Billing day (idempotent)")
+run1 = call("POST", "/api/billing/batch", staff, json={"today": start})
+mine = [d for d in run1["decisions"] if d["sub_number"] == sub["sub_number"]]
+check("subscription billed once", len(mine) == 1 and mine[0]["action"] == "BILL", mine)
+run2 = call("POST", "/api/billing/batch", staff, json={"today": start})
+check("second run bills nothing for it", not any(d["sub_number"] == sub["sub_number"] and d["action"] == "BILL" for d in run2["decisions"]))
+invoices = call("GET", f"/api/invoices?subscription_id={sid}", staff)
+check("exactly one invoice", len(invoices) == 1, invoices)
+inv = call("GET", f"/api/invoices/{invoices[0]['id']}", customer_token)
+check("invoice CONFIRMED with snapshot lines", inv["status"] == "CONFIRMED" and len(inv["lines"]) == 2)
 
+print("\n5. Payments (partial -> paid)")
+half = round(inv["grand_total"] / 2, 2)
+inv = call("POST", "/api/payments", staff, expected=201,
+           json={"invoice_id": inv["id"], "payment_method": "UPI", "amount": half, "payment_date": start, "note": "part 1"})
+check("PARTIALLY_PAID", inv["status"] == "PARTIALLY_PAID")
+call("POST", "/api/payments", staff, expected=400,
+     json={"invoice_id": inv["id"], "payment_method": "CASH", "amount": inv["amount_due"] + 1, "payment_date": start})
+inv = call("POST", "/api/payments", staff, expected=201,
+           json={"invoice_id": inv["id"], "payment_method": "BANK_TRANSFER", "amount": inv["amount_due"], "payment_date": start, "note": "balance"})
+check("PAID with amount_due 0", inv["status"] == "PAID" and inv["amount_due"] == 0)
 
-if __name__ == "__main__":
-    sys.exit(main())
+print("\n6. Pause / resume / add-on toggle")
+sub = call("POST", f"/api/subscriptions/{sid}/transition", customer_token, json={"target_status": "PAUSED"})
+check("PAUSED", sub["status"] == "PAUSED" and sub["paused_at"] == start)
+sub = call("POST", f"/api/subscriptions/{sid}/transition", customer_token, json={"target_status": "ACTIVE"})
+check("resumed ACTIVE", sub["status"] == "ACTIVE")
+whatsapp = next(p for p in products if p["name"] == "WhatsApp Automated Alerts")
+sub = call("POST", f"/api/subscriptions/{sid}/toggle-addon", customer_token,
+           json={"product_id": whatsapp["id"], "variant_id": None, "enabled": False})
+check("add-on removed", len(sub["lines"]) == 1)
+
+print("\n7. Finance summary")
+future = (date.today() + timedelta(days=400)).isoformat()
+summary = call("GET", f"/api/analytics/summary?today={future}", admin)
+check("summary has KPIs", summary["active_subscriptions_count"] >= 1 and "overdue_invoices" in summary)
+check("query under 2 s", summary["query_time_ms"] < 2000, summary["query_time_ms"])
+call("GET", "/api/analytics/summary", customer_token, expected=403)
+
+print(f"\n{'ALL CHECKS PASSED' if not failures else f'{failures} CHECK(S) FAILED'}")
+sys.exit(1 if failures else 0)

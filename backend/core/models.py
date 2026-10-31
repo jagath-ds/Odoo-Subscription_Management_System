@@ -130,7 +130,7 @@ class QuotationTemplate(Base):
     name = Column(String, nullable=False)
     plan_id = Column(Integer, ForeignKey("plans.id"), nullable=False)
     validity_days = Column(Integer, default=30)
-    lines = relationship("QuotationTemplateLine", back_populates="template", cascade="all, delete")
+    lines = relationship("QuotationTemplateLine", back_populates="template", cascade="all, delete-orphan")
 
 # --- TABLE 8: quotation_template_lines ---
 class QuotationTemplateLine(Base):
@@ -156,7 +156,7 @@ class Subscription(Base):
     expiry_date = Column(Date, nullable=True)
     paused_at = Column(Date, nullable=True)
     payment_terms_days = Column(Integer, default=30)
-    lines = relationship("SubscriptionLine", back_populates="subscription", cascade="all, delete")
+    lines = relationship("SubscriptionLine", back_populates="subscription", cascade="all, delete-orphan")
     __table_args__ = (
         Index("ix_sub_status_billing", "status", "next_billing_date"),
     )
@@ -191,6 +191,7 @@ class Invoice(Base):
     grand_total = Column(Numeric(12, 2), default=0)
     amount_paid = Column(Numeric(12, 2), default=0)
     lines = relationship("InvoiceLine", back_populates="invoice", cascade="all, delete")
+    payments = relationship("Payment", back_populates="invoice", cascade="all, delete")
     __table_args__ = (
         UniqueConstraint("subscription_id", "billing_period_key", name="uq_invoice_period"),
         Index("ix_invoice_status_due", "status", "due_date"),
@@ -220,3 +221,4 @@ class Payment(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     payment_date = Column(Date, nullable=False)
     note = Column(Text, nullable=True)
+    invoice = relationship("Invoice", back_populates="payments")
