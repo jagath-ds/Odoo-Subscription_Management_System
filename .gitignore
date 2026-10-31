@@ -11,3 +11,8 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Project planning and blueprint documents
+brightloop_plan.md
+BRIGHTLOOP_EXECUTION_PLAN.md
+Brightloop Subscription ERP - Team Implementation Blueprint.pdf
