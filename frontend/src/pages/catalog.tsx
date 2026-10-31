@@ -1,0 +1,5 @@
+export { ProductsPage } from './catalog/ProductsPage'
+export { PlansPage } from './catalog/PlansPage'
+export { TaxRulesPage } from './catalog/TaxRulesPage'
+export { DiscountRulesPage } from './catalog/DiscountRulesPage'
+export { QuotationTemplatesPage } from './catalog/QuotationTemplatesPage'

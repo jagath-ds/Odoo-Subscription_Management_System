@@ -65,8 +65,9 @@ def subscription_list(db: Session, subs: list[Subscription]) -> list[dict]:
     plans = {p.id: p for p in db.query(Plan).all()}
     names = _names(db, {s.customer_id for s in subs})
     rules = db.query(DiscountRule).all()
-    # Warm the identity map so per-line lookups don't hit the database.
-    db.query(Product).all(), db.query(ProductVariant).all(), db.query(TaxRule).all()
+    # Warm the identity map so per-line lookups don't hit the database. The
+    # identity map holds weak references, so keep these lists alive.
+    _catalog = (db.query(Product).all(), db.query(ProductVariant).all(), db.query(TaxRule).all())  # noqa: F841
     rows = []
     for sub in subs:
         plan = plans[sub.plan_id]
