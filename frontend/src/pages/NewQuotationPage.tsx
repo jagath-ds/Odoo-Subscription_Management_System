@@ -237,7 +237,7 @@ export function NewQuotationPage() {
         })),
       })
 
-      toast.success(`Subscription ${detail.sub_number} created and confirmed!`)
+      toast.success(`Quotation ${detail.sub_number} created as Draft`)
       navigate(`/subscriptions/${detail.id}`)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to create subscription')
@@ -549,8 +549,8 @@ export function NewQuotationPage() {
                 <p className="font-semibold text-foreground">Conversion Contract</p>
                 <p>
                   Creating this order registers a new subscription with status{' '}
-                  <span className="font-semibold text-indigo-400">CONFIRMED</span> and sets up the
-                  recurring schedule for upcoming billing runs.
+                  <span className="font-semibold text-indigo-400">DRAFT</span>. Move it through
+                  Quotation, Confirmed and Active from the subscription page.
                 </p>
               </div>
 
@@ -561,7 +561,7 @@ export function NewQuotationPage() {
                 onClick={handleCreateSubscription}
               >
                 <CheckCircle className="size-4" />
-                {submitting ? 'Generating Subscription…' : 'Create & Confirm Subscription'}
+                {submitting ? 'Creating Quotation…' : 'Create Quotation'}
               </Button>
             </CardContent>
           </Card>
