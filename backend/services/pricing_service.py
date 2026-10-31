@@ -101,7 +101,12 @@ def _best_discount(rules: list[DiscountRule], **kwargs) -> tuple[Optional[Discou
     return best_rule, best
 
 
-def price_subscription(db: Session, subscription: Subscription, on_date: Optional[date] = None) -> PricedSubscription:
+def price_subscription(
+    db: Session,
+    subscription: Subscription,
+    on_date: Optional[date] = None,
+    rules: Optional[list[DiscountRule]] = None,
+) -> PricedSubscription:
     """Explicitly linked discount rules are used as-is; otherwise every eligible
     rule of the matching scope is considered automatically, so admin-defined
     discounts appear on the next invoice on their own and stop once expired or
@@ -109,7 +114,7 @@ def price_subscription(db: Session, subscription: Subscription, on_date: Optiona
     on_date = on_date or date.today()
     priced: list[PricedLine] = []
     applied: set[int] = set()
-    all_rules = db.query(DiscountRule).all()
+    all_rules = rules if rules is not None else db.query(DiscountRule).all()
     product_rules = [r for r in all_rules if r.scope == DiscountScope.PRODUCT]
     subscription_rules = [r for r in all_rules if r.scope == DiscountScope.SUBSCRIPTION]
 

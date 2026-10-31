@@ -5,7 +5,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from ..core.models import Invoice, InvoiceStatus, Plan, Subscription, User
+from ..core.models import DiscountRule, Invoice, InvoiceStatus, Plan, Product, ProductVariant, Subscription, TaxRule, User
 from .pricing_service import ZERO, money, price_subscription
 
 OPEN_INVOICE_STATUSES = {InvoiceStatus.CONFIRMED, InvoiceStatus.PARTIALLY_PAID}
@@ -34,6 +34,8 @@ def subscription_detail(db: Session, sub: Subscription, on_date: Optional[date] 
         "next_billing_date": sub.next_billing_date,
         "expiry_date": sub.expiry_date,
         "paused_at": sub.paused_at,
+        "quotation_valid_until": sub.quotation_valid_until,
+        "payment_terms_days": sub.payment_terms_days,
         "plan_permissions": {
             "auto_close": plan.auto_close,
             "can_close_early": plan.can_close_early,
@@ -62,6 +64,9 @@ def subscription_detail(db: Session, sub: Subscription, on_date: Optional[date] 
 def subscription_list(db: Session, subs: list[Subscription]) -> list[dict]:
     plans = {p.id: p for p in db.query(Plan).all()}
     names = _names(db, {s.customer_id for s in subs})
+    rules = db.query(DiscountRule).all()
+    # Warm the identity map so per-line lookups don't hit the database.
+    db.query(Product).all(), db.query(ProductVariant).all(), db.query(TaxRule).all()
     rows = []
     for sub in subs:
         plan = plans[sub.plan_id]
@@ -74,7 +79,7 @@ def subscription_list(db: Session, subs: list[Subscription]) -> list[dict]:
             "status": sub.status,
             "next_billing_date": sub.next_billing_date,
             "expiry_date": sub.expiry_date,
-            "grand_total": price_subscription(db, sub).grand_total,
+            "grand_total": price_subscription(db, sub, rules=rules).grand_total,
         })
     return rows
 

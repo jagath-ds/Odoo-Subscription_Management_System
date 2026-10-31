@@ -40,9 +40,6 @@ yarn-error.log*
 pnpm-debug.log*
 coverage/
 
-# --- Reference material (kept locally, not versioned) ----------------------------------------
-docs/
-
 # --- Tooling, editors & OS --------------------------------------------------------------
 .claude/
 .vscode/*

@@ -9,7 +9,7 @@ and annual plans, and an enterprise quotation template.
 """
 
 import os
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -21,12 +21,18 @@ from .core.models import (
     DiscountRule,
     DiscountScope,
     DiscountType,
+    InvoiceStatus,
+    Payment,
+    PaymentMethod,
     Plan,
     Product,
     ProductType,
     ProductVariant,
     QuotationTemplate,
     QuotationTemplateLine,
+    Subscription,
+    SubscriptionLine,
+    SubscriptionStatus,
     TaxRule,
     User,
     UserRole,
@@ -55,9 +61,10 @@ def seed() -> None:
         password = hash_password(DEMO_PASSWORD)
         get_or_create(db, User, {"email": ADMIN_EMAIL}, full_name="Brightloop Admin", role=UserRole.ADMIN, password_hash=password)
         get_or_create(db, User, {"email": STAFF_EMAIL}, full_name="Sam Sales (Staff)", role=UserRole.STAFF, password_hash=password)
-        get_or_create(db, User, {"email": CUSTOMER_EMAIL}, full_name="Acme Retail Pvt Ltd", role=UserRole.CUSTOMER, password_hash=password)
+        acme = get_or_create(db, User, {"email": CUSTOMER_EMAIL}, full_name="Acme Retail Pvt Ltd", role=UserRole.CUSTOMER, password_hash=password)
+        nova = get_or_create(db, User, {"email": "billing@novatraders.example"}, full_name="Nova Traders", role=UserRole.CUSTOMER, password_hash=password)
 
-        get_or_create(db, TaxRule, {"name": "GST 18%"}, rate_percent=Decimal("18.00"), is_active=True)
+        gst = get_or_create(db, TaxRule, {"name": "GST 18%"}, rate_percent=Decimal("18.00"), is_active=True)
 
         erp = get_or_create(
             db, Product, {"name": "Brightloop Cloud ERP"},
@@ -72,19 +79,19 @@ def seed() -> None:
             notes="Add-on customers can switch on/off from the portal", is_active=True,
         )
 
-        get_or_create(
-            db, Plan, {"name": "Monthly Starter"},
+        monthly = get_or_create(
+            db, Plan, {"name": "Monthly Starter Plan"},
             billing_frequency=BillingFrequency.MONTHLY, plan_price=Decimal("2000.00"), min_qty=1,
             auto_close=False, can_close_early=True, can_pause=True, can_renew=True,
         )
         annual = get_or_create(
-            db, Plan, {"name": "Annual Enterprise"},
+            db, Plan, {"name": "Annual Enterprise Plan"},
             billing_frequency=BillingFrequency.YEARLY, plan_price=Decimal("24000.00"), min_qty=5,
             auto_close=True, can_close_early=False, can_pause=True, can_renew=True,
         )
 
         get_or_create(
-            db, DiscountRule, {"name": "Bulk Seats 10%"},
+            db, DiscountRule, {"name": "10% Off for >=10 seats"},
             discount_type=DiscountType.PERCENT, value=Decimal("10.00"), scope=DiscountScope.PRODUCT,
             min_qty=10, min_purchase=Decimal("0.00"), valid_from=date(date.today().year, 1, 1),
             valid_until=date(date.today().year, 12, 31), max_uses=50, current_uses=0,
@@ -98,6 +105,9 @@ def seed() -> None:
             ]
             db.add(template)
 
+        db.flush()
+        seed_sample_activity(db, acme, nova, annual, monthly, erp, odoo, whatsapp, gst)
+
         db.commit()
         print("Demo data is ready.")
         print(f"  Admin:    {ADMIN_EMAIL}")
@@ -109,6 +119,62 @@ def seed() -> None:
         raise
     finally:
         db.close()
+
+
+def _subscription(db, number, customer, plan, status, start, lines, gst, paused_at=None):
+    sub = Subscription(
+        sub_number=number, customer_id=customer.id, plan_id=plan.id, status=status,
+        start_date=start, next_billing_date=start, expiry_date=start + timedelta(days=365),
+        paused_at=paused_at, payment_terms_days=15, quotation_valid_until=date.today() + timedelta(days=30),
+    )
+    sub.lines = [
+        SubscriptionLine(product_id=p.id, variant_id=v.id if v else None, tax_id=gst.id, quantity=q,
+                         unit_price=p.sales_price + (v.price_extra if v else Decimal("0")))
+        for p, v, q in lines
+    ]
+    db.add(sub)
+    db.flush()
+    return sub
+
+
+def seed_sample_activity(db, acme, nova, annual, monthly, erp, odoo, whatsapp, gst) -> None:
+    """Sample subscriptions and invoices in every status (created once)."""
+    from .services.invoicing import build_invoice
+
+    if db.query(Subscription).filter(Subscription.sub_number.like("SUB-DEMO-%")).first():
+        return
+    today = date.today()
+
+    # Active monthly subscription with a full invoice history.
+    active = _subscription(db, "SUB-DEMO-0001", acme, monthly, SubscriptionStatus.ACTIVE, today - timedelta(days=95),
+                           [(erp, odoo, 3), (whatsapp, None, 1)], gst)
+    history = [
+        (today - timedelta(days=95), InvoiceStatus.PAID, "full"),
+        (today - timedelta(days=65), InvoiceStatus.PARTIALLY_PAID, "half"),
+        (today - timedelta(days=35), InvoiceStatus.CONFIRMED, None),   # overdue (due 15 days after issue)
+        (today - timedelta(days=5), InvoiceStatus.CONFIRMED, None),    # open, not yet due
+    ]
+    for issued, status, paid in history:
+        inv = build_invoice(db, active, f"{active.sub_number}:{issued.isoformat()}", issued, status=status)
+        db.flush()
+        if paid:
+            amount = inv.grand_total if paid == "full" else (inv.grand_total / 2).quantize(Decimal("0.01"))
+            inv.amount_paid = amount
+            db.add(Payment(invoice_id=inv.id, payment_method=PaymentMethod.UPI, amount=amount,
+                           payment_date=issued + timedelta(days=3), note="Seeded payment"))
+    active.next_billing_date = today + timedelta(days=25)
+
+    # Draft invoice on a second active (enterprise, discounted) subscription.
+    enterprise = _subscription(db, "SUB-DEMO-0002", nova, annual, SubscriptionStatus.ACTIVE, today - timedelta(days=1),
+                               [(erp, odoo, 10), (whatsapp, None, 1)], gst)
+    build_invoice(db, enterprise, f"{enterprise.sub_number}:{enterprise.start_date.isoformat()}", today, status=InvoiceStatus.DRAFT)
+    enterprise.next_billing_date = enterprise.start_date.replace(year=enterprise.start_date.year + 1)
+
+    # Paused and quotation-stage subscriptions for the lifecycle demo.
+    _subscription(db, "SUB-DEMO-0003", acme, annual, SubscriptionStatus.PAUSED, today - timedelta(days=40),
+                  [(erp, None, 5)], gst, paused_at=today - timedelta(days=7))
+    _subscription(db, "SUB-DEMO-0004", nova, monthly, SubscriptionStatus.QUOTATION, today, [(erp, odoo, 2)], gst)
+    db.flush()
 
 
 if __name__ == "__main__":

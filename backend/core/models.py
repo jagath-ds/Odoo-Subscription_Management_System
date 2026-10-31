@@ -156,6 +156,8 @@ class Subscription(Base):
     expiry_date = Column(Date, nullable=True)
     paused_at = Column(Date, nullable=True)
     payment_terms_days = Column(Integer, default=30)
+    # Last day a QUOTATION can be confirmed (created_on + template validity_days).
+    quotation_valid_until = Column(Date, nullable=True)
     lines = relationship("SubscriptionLine", back_populates="subscription", cascade="all, delete-orphan")
     __table_args__ = (
         Index("ix_sub_status_billing", "status", "next_billing_date"),

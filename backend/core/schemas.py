@@ -254,6 +254,7 @@ class SubscriptionCreate(BaseModel):
     start_date: date
     expiry_date: Optional[date] = None
     payment_terms_days: int = Field(default=30, ge=0, le=365)
+    quotation_validity_days: int = Field(default=30, ge=1, le=365)
     lines: list[SubscriptionLineCreate] = Field(min_length=1)
 
 
@@ -323,6 +324,8 @@ class SubscriptionDetail(BaseModel):
     next_billing_date: Optional[date]
     expiry_date: Optional[date]
     paused_at: Optional[date]
+    quotation_valid_until: Optional[date] = None
+    payment_terms_days: int = 30
     plan_permissions: PlanPermissions
     lines: list[SubscriptionDetailLine]
     summary: SubscriptionSummary

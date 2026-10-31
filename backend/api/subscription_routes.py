@@ -5,10 +5,12 @@ from decimal import Decimal
 from typing import Optional
 from uuid import uuid4
 
+from datetime import timedelta
+
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..core.auth import get_current_user, staff_or_admin
 from ..core.database import get_db
@@ -121,7 +123,7 @@ def _build_lines(db: Session, plan: Plan, raw_lines: list[dict], enforce_min_qty
     return lines
 
 
-def _new_subscription(customer_id, plan, start, expiry, terms, discount_id, status_) -> Subscription:
+def _new_subscription(customer_id, plan, start, expiry, terms, discount_id, status_, validity_days) -> Subscription:
     return Subscription(
         sub_number=f"SUB-{start:%Y%m}-{uuid4().hex[:6].upper()}",
         customer_id=customer_id,
@@ -132,6 +134,7 @@ def _new_subscription(customer_id, plan, start, expiry, terms, discount_id, stat
         next_billing_date=start,  # first period is billed on the start date
         expiry_date=expiry,
         payment_terms_days=terms,
+        quotation_valid_until=date.today() + timedelta(days=validity_days),
     )
 
 
@@ -143,7 +146,7 @@ def list_subscriptions(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    query = db.query(Subscription)
+    query = db.query(Subscription).options(selectinload(Subscription.lines))
     if user.role == UserRole.CUSTOMER:
         query = query.filter(Subscription.customer_id == user.id)
     elif customer_id:
@@ -178,6 +181,7 @@ def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_d
         payload.customer_id, plan, payload.start_date,
         payload.expiry_date or _default_expiry(plan, payload.start_date),
         payload.payment_terms_days, payload.discount_id, SubscriptionStatus.DRAFT,
+        payload.quotation_validity_days,
     )
     sub.lines = _build_lines(db, plan, [line.model_dump() for line in payload.lines])
     db.add(sub)
@@ -201,8 +205,8 @@ def create_from_template(payload: CreateFromTemplate, db: Session = Depends(get_
     )
     sub = _new_subscription(
         payload.customer_id, plan, payload.start_date, _default_expiry(plan, payload.start_date),
-        payload.payment_terms_days if payload.payment_terms_days is not None else template.validity_days,
-        None, SubscriptionStatus.QUOTATION,
+        payload.payment_terms_days if payload.payment_terms_days is not None else 30,
+        None, SubscriptionStatus.QUOTATION, template.validity_days,
     )
     sub.lines = _build_lines(db, plan, raw_lines)
     db.add(sub)
@@ -224,6 +228,16 @@ def transition_subscription(
         raise HTTPException(status_code=403, detail="Customers may only pause, resume, renew, or close their own subscriptions")
     plan = db.get(Plan, sub.plan_id)
     today = date.today()
+    if (
+        target == SubscriptionStatus.CONFIRMED
+        and sub.status in {SubscriptionStatus.DRAFT, SubscriptionStatus.QUOTATION}
+        and sub.quotation_valid_until
+        and today > sub.quotation_valid_until
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Quotation expired on {sub.quotation_valid_until}; create a new quotation to confirm it",
+        )
     result = check_subscription_transition(
         current_status=sub.status.value,
         target_status=target.value,
