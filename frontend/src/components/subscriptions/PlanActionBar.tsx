@@ -21,6 +21,8 @@ interface PlanActionBarProps {
   subscription: SubscriptionDetail
   onTransition: (targetStatus: SubscriptionStatus) => Promise<void>
   loading?: boolean
+  /** Customers may only pause, resume, close (if allowed) and renew their own subscription. */
+  customerMode?: boolean
 }
 
 interface ActionBtnProps {
@@ -76,6 +78,7 @@ export function PlanActionBar({
   subscription,
   onTransition,
   loading = false,
+  customerMode = false,
 }: PlanActionBarProps) {
   const [activeAction, setActiveAction] = useState<SubscriptionStatus | null>(null)
   const { status, plan_permissions } = subscription
@@ -92,7 +95,7 @@ export function PlanActionBar({
   return (
     <TooltipProvider delay={100}>
       <div className="flex flex-wrap items-center gap-2">
-        {status === 'DRAFT' && (
+        {!customerMode && status === 'DRAFT' && (
           <>
             <ActionBtn
               label="Submit Quotation"
@@ -101,13 +104,6 @@ export function PlanActionBar({
               variant="default"
               loading={loading || activeAction === 'QUOTATION'}
               onClick={() => handleAction('QUOTATION')}
-            />
-            <ActionBtn
-              label="Confirm Directly"
-              icon={CheckCircle}
-              targetStatus="CONFIRMED"
-              loading={loading || activeAction === 'CONFIRMED'}
-              onClick={() => handleAction('CONFIRMED')}
             />
             <ActionBtn
               label="Cancel"
@@ -120,7 +116,7 @@ export function PlanActionBar({
           </>
         )}
 
-        {status === 'QUOTATION' && (
+        {!customerMode && status === 'QUOTATION' && (
           <>
             <ActionBtn
               label="Confirm Order"
@@ -141,7 +137,7 @@ export function PlanActionBar({
           </>
         )}
 
-        {status === 'CONFIRMED' && (
+        {!customerMode && status === 'CONFIRMED' && (
           <>
             <ActionBtn
               label="Activate Subscription"
@@ -189,17 +185,6 @@ export function PlanActionBar({
               loading={loading || activeAction === 'CLOSED'}
               onClick={() => handleAction('CLOSED')}
             />
-            <ActionBtn
-              label="Renew Cycle"
-              icon={RotateCcw}
-              targetStatus="ACTIVE"
-              disabled={!plan_permissions.can_renew}
-              tooltipReason={
-                !plan_permissions.can_renew ? 'This plan does not allow renewal' : null
-              }
-              loading={loading}
-              onClick={() => handleAction('ACTIVE')}
-            />
           </>
         )}
 
@@ -213,29 +198,31 @@ export function PlanActionBar({
               loading={loading || activeAction === 'ACTIVE'}
               onClick={() => handleAction('ACTIVE')}
             />
-            <ActionBtn
-              label="Close Subscription"
-              icon={StopCircle}
-              targetStatus="CLOSED"
-              variant="destructive"
-              loading={loading || activeAction === 'CLOSED'}
-              onClick={() => handleAction('CLOSED')}
-            />
+            {!customerMode && (
+              <ActionBtn
+                label="Close Subscription"
+                icon={StopCircle}
+                targetStatus="CLOSED"
+                variant="destructive"
+                loading={loading || activeAction === 'CLOSED'}
+                onClick={() => handleAction('CLOSED')}
+              />
+            )}
           </>
         )}
 
         {status === 'CLOSED' && (
           <ActionBtn
-            label="Renew / Reopen"
+            label="Renew Subscription"
             icon={RotateCcw}
-            targetStatus="CONFIRMED"
+            targetStatus="ACTIVE"
             variant="default"
             disabled={!plan_permissions.can_renew}
             tooltipReason={
               !plan_permissions.can_renew ? 'This plan does not allow renewal' : null
             }
-            loading={loading || activeAction === 'CONFIRMED'}
-            onClick={() => handleAction('CONFIRMED')}
+            loading={loading || activeAction === 'ACTIVE'}
+            onClick={() => handleAction('ACTIVE')}
           />
         )}
       </div>

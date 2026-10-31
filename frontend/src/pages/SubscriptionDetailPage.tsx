@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { formatINR } from '@/lib/format'
+import { useSession } from '@/mocks/store/AppStore'
 import {
   getSubscription,
   listProducts,
@@ -30,6 +31,8 @@ import type {
 export function SubscriptionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isCustomer = useSession()?.role === 'CUSTOMER'
+  const backTo = isCustomer ? '/portal' : '/subscriptions'
   const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null)
   const [addons, setAddons] = useState<ProductWithVariants[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,7 +125,7 @@ export function SubscriptionDetailPage() {
         <ShieldAlert className="mx-auto size-12 text-destructive" />
         <h2 className="text-lg font-bold text-foreground">Subscription Not Found</h2>
         <p className="text-sm text-muted-foreground">{error ?? 'This subscription does not exist.'}</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/subscriptions')}>
+        <Button variant="outline" size="sm" onClick={() => navigate(backTo)}>
           Back to all subscriptions
         </Button>
       </div>
@@ -135,7 +138,7 @@ export function SubscriptionDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <Link
-            to="/subscriptions"
+            to={backTo}
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
           >
             <ArrowLeft className="size-3.5" />
@@ -153,6 +156,7 @@ export function SubscriptionDetailPage() {
           subscription={subscription}
           onTransition={handleTransition}
           loading={actionPending}
+          customerMode={isCustomer}
         />
       </div>
 

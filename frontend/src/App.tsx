@@ -125,7 +125,8 @@ export function App() {
         <Route
           path="invoices/:id"
           element={
-            <RequireRole allow={INTERNAL}>
+            // Customers open their own invoices from the portal (view / print); the API enforces ownership.
+            <RequireRole allow={['ADMIN', 'STAFF', 'CUSTOMER']}>
               <InvoiceDetailPage />
             </RequireRole>
           }

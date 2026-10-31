@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatDate, formatINR } from '@/lib/format'
+import { useSession } from '@/mocks/store/AppStore'
 import {
   cancelInvoice,
   confirmInvoice,
@@ -36,6 +37,8 @@ import type { InvoiceDetail } from '@/types/contracts'
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const isCustomer = useSession()?.role === 'CUSTOMER'
+  const backTo = isCustomer ? '/portal/invoices' : '/invoices'
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
@@ -91,7 +94,8 @@ export function InvoiceDetailPage() {
   async function handleSend() {
     if (!invoice) return
     try {
-      await sendInvoice(invoice.id)
+      const updated = await sendInvoice(invoice.id)
+      setInvoice(updated)
       toast.success(`Invoice dispatched to ${invoice.customer_name}`)
     } catch {
       toast.error('Failed to send invoice')
@@ -114,7 +118,7 @@ export function InvoiceDetailPage() {
         <FileText className="mx-auto size-12 text-destructive" />
         <h2 className="text-lg font-bold text-foreground">Invoice Not Found</h2>
         <p className="text-sm text-muted-foreground">{error ?? 'This invoice does not exist.'}</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/invoices')}>
+        <Button variant="outline" size="sm" onClick={() => navigate(backTo)}>
           Back to all invoices
         </Button>
       </div>
@@ -127,7 +131,7 @@ export function InvoiceDetailPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div className="space-y-1">
           <Link
-            to="/invoices"
+            to={backTo}
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-1"
           >
             <ArrowLeft className="size-3.5" />
@@ -160,14 +164,16 @@ export function InvoiceDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {invoice.status === 'DRAFT' && (
+          {!isCustomer && invoice.status === 'DRAFT' && (
             <Button size="sm" onClick={handleConfirm} className="gap-1.5 text-xs">
               <CheckCircle2 className="size-3.5" />
               Confirm Invoice
             </Button>
           )}
 
-          {invoice.amount_due > 0 && invoice.status !== 'CANCELLED' && (
+          {!isCustomer &&
+            invoice.amount_due > 0 &&
+            (invoice.status === 'CONFIRMED' || invoice.status === 'PARTIALLY_PAID') && (
             <Button
               size="sm"
               onClick={() => setPaymentDialogOpen(true)}
@@ -178,15 +184,17 @@ export function InvoiceDetailPage() {
             </Button>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSend}
-            className="gap-1.5 text-xs"
-          >
-            <Send className="size-3.5" />
-            Send to Customer
-          </Button>
+          {!isCustomer && invoice.status !== 'CANCELLED' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSend}
+              className="gap-1.5 text-xs"
+            >
+              <Send className="size-3.5" />
+              Send to Customer
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -198,7 +206,9 @@ export function InvoiceDetailPage() {
             Print / PDF
           </Button>
 
-          {invoice.status !== 'CANCELLED' && invoice.status !== 'PAID' && (
+          {!isCustomer &&
+            (invoice.status === 'DRAFT' || invoice.status === 'CONFIRMED') &&
+            invoice.amount_paid === 0 && (
             <Button
               variant="ghost"
               size="sm"
