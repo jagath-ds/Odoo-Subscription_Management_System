@@ -17,11 +17,17 @@ import type {
   QuotationTemplateDetail,
   Role,
   SessionUser,
+  SubscriptionDetail,
+  SubscriptionListItem,
   TaxRule,
+  User,
 } from '@/types/contracts'
+import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
 import * as live from './live.adapter'
 import * as mock from './mock.adapter'
 import type {
+  AddStaffInput,
+  CreateFromTemplateInput,
   DiscountRuleInput,
   LoginInput,
   PlanInput,
@@ -30,11 +36,16 @@ import type {
   QuotationTemplateInput,
   ResetLinkResult,
   SignupInput,
+  SubscriptionQuery,
   TaxRuleInput,
+  ToggleAddonInput,
+  TransitionSubscriptionInput,
 } from './types'
 
 export { ApiError } from './types'
 export type {
+  AddStaffInput,
+  CreateFromTemplateInput,
   DiscountRuleInput,
   LoginInput,
   PlanInput,
@@ -43,7 +54,10 @@ export type {
   QuotationTemplateInput,
   ResetLinkResult,
   SignupInput,
+  SubscriptionQuery,
   TaxRuleInput,
+  ToggleAddonInput,
+  TransitionSubscriptionInput,
 } from './types'
 
 export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false'
@@ -209,3 +223,51 @@ export function deleteQuotationTemplate(id: number): Promise<void> {
     () => live.removeQuotationTemplate(id),
   )
 }
+
+/* ------------------------------------------------------------------ */
+/* Subscriptions & quotations (Contract A)                             */
+/* ------------------------------------------------------------------ */
+
+export function listSubscriptions(q?: SubscriptionQuery): Promise<SubscriptionListItem[]> {
+  return route(() => mock.listSubscriptions(q), () => live.listSubscriptions(q))
+}
+
+export function getSubscription(id: number): Promise<SubscriptionDetail> {
+  return route(() => mock.getSubscription(id), () => live.getSubscription(id))
+}
+
+export function transitionSubscription(
+  input: TransitionSubscriptionInput,
+): Promise<SubscriptionDetail> {
+  return route(() => mock.transitionSubscription(input), () => live.transitionSubscription(input))
+}
+
+export function createSubscriptionFromTemplate(
+  input: CreateFromTemplateInput,
+): Promise<SubscriptionDetail> {
+  return route(
+    () => mock.createSubscriptionFromTemplate(input),
+    () => live.createSubscriptionFromTemplate(input),
+  )
+}
+
+export function toggleAddon(input: ToggleAddonInput): Promise<SubscriptionDetail> {
+  return route(() => mock.toggleAddon(input), () => live.toggleAddon(input))
+}
+
+export function listCustomers(): Promise<CustomerUser[]> {
+  return route(() => mock.listCustomers(), () => live.listCustomers())
+}
+
+/* ------------------------------------------------------------------ */
+/* Staff team management                                               */
+/* ------------------------------------------------------------------ */
+
+export function listStaff(): Promise<User[]> {
+  return route(() => mock.listStaff(), () => live.listStaff())
+}
+
+export function addStaff(input: AddStaffInput): Promise<User> {
+  return route(() => mock.addStaff(input), () => live.addStaff(input))
+}
+

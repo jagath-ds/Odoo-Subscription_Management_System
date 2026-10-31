@@ -1,5 +1,6 @@
-import type { AppNotification, SessionUser } from '@/types/contracts'
+import type { AppNotification, Role, SessionUser, User } from '@/types/contracts'
 import { resetCatalogDb } from './catalogDb'
+import { resetSubscriptionDb } from './subscriptionDb'
 import { DEMO_TODAY, DEMO_USERS, demoUserForRole, seedNotifications, type DemoUser } from './fixtures'
 
 /**
@@ -38,6 +39,43 @@ export function insertUser(input: {
   return user
 }
 
+export function listStaff(): User[] {
+  return users
+    .filter((user) => user.role === 'ADMIN' || user.role === 'STAFF')
+    .map((user) => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      created_at: user.created_at,
+    }))
+}
+
+export function insertStaff(input: {
+  email: string
+  full_name: string
+  password: string
+  role: Role
+}): User {
+  const user: DemoUser = {
+    id: nextUserId++,
+    email: input.email.trim().toLowerCase(),
+    full_name: input.full_name.trim(),
+    role: input.role,
+    password: input.password,
+    created_at: DEMO_TODAY,
+    reset_token: null,
+  }
+  users = [...users, user]
+  return {
+    id: user.id,
+    email: user.email,
+    full_name: user.full_name,
+    role: user.role,
+    created_at: user.created_at,
+  }
+}
+
 export function toSession(user: DemoUser): SessionUser {
   return {
     id: user.id,
@@ -64,4 +102,5 @@ export function resetMockDb(): void {
   notifications = seedNotifications()
   nextUserId = 100
   resetCatalogDb()
+  resetSubscriptionDb()
 }

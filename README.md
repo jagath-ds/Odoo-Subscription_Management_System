@@ -14,8 +14,8 @@ dependencies are installed on your machine by the setup scripts below.
 | --- | --- | --- |
 | 1 | Blueprint & contracts (`docs/Phase-1-Blueprint.pdf`) | Done |
 | 2 | App shell, authentication, role-aware navigation, routing | **Done** |
-| 3 | Catalog & rules studio, subscriptions, quotations | **In progress** — catalog done, subscriptions next |
-| 4 | Billing Day, invoices, payments, portal data | Placeholder routes |
+| 3 | Catalog & rules studio, subscriptions, quotations, team | **Done** |
+| 4 | Billing Day, invoices, payments, portal data | In progress |
 | 5 | Analytics, polish, live API wiring | Placeholder routes |
 
 Every navigation entry resolves to a real page: completed surfaces render live mock data,
@@ -180,7 +180,33 @@ Run inside `frontend/`:
 * All catalog calls go through `services/api.ts`; the mock store is seeded with 6 products,
   7 variants, 6 plans, 5 tax rules, 5 discount rules and 4 templates.
 
-### Subscriptions & quotations — next
+### Subscriptions, Quotations & Team ERP — done
 
-Subscription list and detail, the status ribbon, permission-gated pause / resume / close /
-renew, create-from-template, and the staff team page.
+* **Subscriptions List & Detail** — Contract A view with status ribbon, customer details,
+  dates, and plan permissions.
+* **Mirrored Business Engine** — framework-free calculation (`lineItem.ts`) with half-up
+  paise rounding, gross/discount/GST math, and calendar date transitions (`transitions.ts`).
+* **Interactive Chevron Ribbon** — Odoo-style pipeline: `DRAFT` → `QUOTATION` → `CONFIRMED`
+  → `ACTIVE` → `PAUSED` / `CLOSED`.
+* **Plan-Flag Gated Actions** — Pause, Early Close, and Renew buttons dynamically disabled
+  with descriptive tooltips (e.g. *"This plan does not allow early closure"*) based on plan rules.
+* **Pause Date Shift** — Resuming a paused subscription computes days paused and shifts
+  both `next_billing_date` and `expiry_date` forward by the exact duration.
+* **Create from Quotation Template** — 1-click template selection pre-populates plan and
+  product lines, provides interactive quantity/variant adjustments with live pricing
+  recalculation, and converts to a confirmed subscription.
+* **Add-on Module Toggling** — Optional add-ons (e.g. WhatsApp Alerts) can be toggled on or
+  off per subscription.
+* **Staff Team Page** — Admin-only staff member list with modal dialog enforcing email
+  uniqueness and the 9+ character password policy.
+
+---
+
+## Phase 4 coverage (next)
+
+* Billing Day Time-Travel Simulator with global clock.
+* Run Billing Day Batch with 5-stage animation and Run Ledger.
+* Double-billing idempotency guard (`{sub_number}:{next_billing_date}`).
+* Invoice list, detail, and printable PDF document.
+* Payment modal (UPI, Bank Transfer, Card, Cash) and partial payment state transitions.
+* Customer self-service portal.

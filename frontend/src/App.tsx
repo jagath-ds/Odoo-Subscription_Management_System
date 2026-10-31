@@ -17,12 +17,12 @@ import {
   BillingDayPage,
   InvoiceDetailPage,
   InvoicesPage,
-  NewQuotationPage,
   PaymentsPage,
-  SubscriptionDetailPage,
-  SubscriptionsPage,
-  TeamPage,
 } from '@/pages/placeholders'
+import { SubscriptionsPage } from '@/pages/SubscriptionsPage'
+import { SubscriptionDetailPage } from '@/pages/SubscriptionDetailPage'
+import { NewQuotationPage } from '@/pages/NewQuotationPage'
+import { TeamPage } from '@/pages/TeamPage'
 import { PortalHomePage, PortalInvoicesPage } from '@/pages/portal'
 import type { Role } from '@/types/contracts'
 import { homeForRole } from '@/types/nav'

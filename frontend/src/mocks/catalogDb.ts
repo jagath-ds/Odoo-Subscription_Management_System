@@ -138,6 +138,10 @@ export function listPlans(): Plan[] {
   return plans.map((plan) => ({ ...plan }))
 }
 
+export function getPlan(id: number): Plan | undefined {
+  return plans.find((plan) => plan.id === id)
+}
+
 export function insertPlan(input: PlanInput): Plan {
   const plan: Plan = { id: nextPlanId++, ...input }
   plans = [...plans, plan]
@@ -167,6 +171,10 @@ export function listTaxRules(): TaxRule[] {
   return taxRules.map((rule) => ({ ...rule }))
 }
 
+export function getTaxRule(id: number): TaxRule | undefined {
+  return taxRules.find((rule) => rule.id === id)
+}
+
 export function insertTaxRule(input: TaxRuleInput): TaxRule {
   const rule: TaxRule = { id: nextTaxRuleId++, ...input }
   taxRules = [...taxRules, rule]
@@ -194,6 +202,10 @@ export function deleteTaxRule(id: number): boolean {
 
 export function listDiscountRules(): DiscountRule[] {
   return discountRules.map((rule) => ({ ...rule }))
+}
+
+export function getDiscountRule(id: number): DiscountRule | undefined {
+  return discountRules.find((rule) => rule.id === id)
 }
 
 export function insertDiscountRule(input: DiscountRuleInput): DiscountRule {
@@ -248,6 +260,10 @@ export function listQuotationTemplates(): QuotationTemplateDetail[] {
         }),
     }
   })
+}
+
+export function getQuotationTemplate(id: number): QuotationTemplateDetail | undefined {
+  return listQuotationTemplates().find((t) => t.id === id)
 }
 
 export function insertQuotationTemplate(input: QuotationTemplateInput): QuotationTemplate {

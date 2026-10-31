@@ -10,11 +10,17 @@ import type {
   QuotationTemplateDetail,
   Role,
   SessionUser,
+  SubscriptionDetail,
+  SubscriptionListItem,
   TaxRule,
+  User,
 } from '@/types/contracts'
+import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
 import {
   ApiError,
+  type AddStaffInput,
   type AuthPayload,
+  type CreateFromTemplateInput,
   type DiscountRuleInput,
   type LoginInput,
   type PlanInput,
@@ -23,7 +29,10 @@ import {
   type QuotationTemplateInput,
   type ResetLinkResult,
   type SignupInput,
+  type SubscriptionQuery,
   type TaxRuleInput,
+  type ToggleAddonInput,
+  type TransitionSubscriptionInput,
 } from './types'
 
 /**
@@ -311,3 +320,67 @@ export async function editQuotationTemplate(
 export async function removeQuotationTemplate(id: number): Promise<void> {
   await request<void>(`/api/quotation-templates/${id}`, { method: 'DELETE' })
 }
+
+/* ------------------------------------------------------------------ */
+/* Subscriptions & quotations (Contract A)                             */
+/* ------------------------------------------------------------------ */
+
+export async function listSubscriptions(
+  q?: SubscriptionQuery,
+): Promise<SubscriptionListItem[]> {
+  const params = new URLSearchParams()
+  if (q?.customer_id) params.set('customer_id', String(q.customer_id))
+  if (q?.status) params.set('status', q.status)
+  if (q?.q) params.set('q', q.q)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  return request<SubscriptionListItem[]>(`/api/subscriptions${qs}`)
+}
+
+export async function getSubscription(id: number): Promise<SubscriptionDetail> {
+  return request<SubscriptionDetail>(`/api/subscriptions/${id}`)
+}
+
+export async function transitionSubscription(
+  input: TransitionSubscriptionInput,
+): Promise<SubscriptionDetail> {
+  return request<SubscriptionDetail>(`/api/subscriptions/${input.id}/transition`, {
+    method: 'POST',
+    body: JSON.stringify({ target_status: input.target_status }),
+  })
+}
+
+export async function createSubscriptionFromTemplate(
+  input: CreateFromTemplateInput,
+): Promise<SubscriptionDetail> {
+  return request<SubscriptionDetail>('/api/subscriptions/from-template', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function toggleAddon(input: ToggleAddonInput): Promise<SubscriptionDetail> {
+  return request<SubscriptionDetail>(`/api/subscriptions/${input.subscription_id}/toggle-addon`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function listCustomers(): Promise<CustomerUser[]> {
+  return request<CustomerUser[]>('/api/customers')
+}
+
+/* ------------------------------------------------------------------ */
+/* Staff team management                                               */
+/* ------------------------------------------------------------------ */
+
+export async function listStaff(): Promise<User[]> {
+  return request<User[]>('/api/team/staff')
+}
+
+export async function addStaff(input: AddStaffInput): Promise<User> {
+  return request<User>('/api/team/staff', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+

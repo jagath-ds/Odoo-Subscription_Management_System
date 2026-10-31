@@ -11,7 +11,11 @@ import type {
   QuotationTemplateDetail,
   Role,
   SessionUser,
+  SubscriptionDetail,
+  SubscriptionListItem,
+  SubscriptionStatus,
   TaxRule,
+  User,
 } from '@/types/contracts'
 import { roundMoney } from '@/lib/format'
 import { validatePassword } from '@/lib/validation'
@@ -45,16 +49,29 @@ import {
 } from '@/mocks/catalogDb'
 import {
   findUserByEmail,
+  insertStaff,
   insertUser,
   listNotifications as listDbNotifications,
+  listStaff as listStaffDb,
   markAllNotificationsRead,
   resetMockDb,
   sessionForRole as buildSessionForRole,
   toSession,
 } from '@/mocks/db'
-import { DEMO_ACCOUNTS } from '@/mocks/fixtures'
+import {
+  createSubscriptionFromTemplate as createSubFromTemplateDb,
+  getSubscription as getSubDb,
+  listCustomers as listCustomersDb,
+  listSubscriptions as listSubsDb,
+  toggleAddon as toggleAddonDb,
+  transitionSubscription as transitionSubDb,
+} from '@/mocks/subscriptionDb'
+import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
+import { DEMO_ACCOUNTS, DEMO_TODAY } from '@/mocks/fixtures'
 import {
   ApiError,
+  type AddStaffInput,
+  type CreateFromTemplateInput,
   type DiscountRuleInput,
   type LoginInput,
   type PlanInput,
@@ -63,7 +80,10 @@ import {
   type QuotationTemplateInput,
   type ResetLinkResult,
   type SignupInput,
+  type SubscriptionQuery,
   type TaxRuleInput,
+  type ToggleAddonInput,
+  type TransitionSubscriptionInput,
 } from './types'
 
 const MIN_LATENCY_MS = 180
@@ -548,3 +568,104 @@ export async function removeQuotationTemplate(id: number): Promise<void> {
     throw new ApiError('NOT_FOUND', 'That template no longer exists.')
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Subscriptions & quotations (Contract A)                             */
+/* ------------------------------------------------------------------ */
+
+export async function listSubscriptions(
+  q?: SubscriptionQuery,
+): Promise<SubscriptionListItem[]> {
+  await sleep(150)
+  return listSubsDb(
+    {
+      customer_id: q?.customer_id,
+      status: q?.status as SubscriptionStatus | undefined,
+      q: q?.q,
+    },
+    DEMO_TODAY,
+  )
+}
+
+export async function getSubscription(id: number): Promise<SubscriptionDetail> {
+  await latency()
+  const detail = getSubDb(id, DEMO_TODAY)
+  if (!detail) throw new ApiError('NOT_FOUND', 'Subscription not found.')
+  return detail
+}
+
+export async function transitionSubscription(
+  input: TransitionSubscriptionInput,
+): Promise<SubscriptionDetail> {
+  await latency()
+  const res = transitionSubDb(input.id, input.target_status, DEMO_TODAY)
+  if (!res.success || !res.detail) {
+    throw new ApiError('CONFLICT', res.error ?? 'Transition not allowed by plan rules.')
+  }
+  return res.detail
+}
+
+export async function createSubscriptionFromTemplate(
+  input: CreateFromTemplateInput,
+): Promise<SubscriptionDetail> {
+  await latency()
+  try {
+    return createSubFromTemplateDb(input, DEMO_TODAY)
+  } catch (err: unknown) {
+    throw new ApiError('INVALID_INPUT', err instanceof Error ? err.message : 'Failed to create subscription')
+  }
+}
+
+export async function toggleAddon(input: ToggleAddonInput): Promise<SubscriptionDetail> {
+  await latency()
+  try {
+    return toggleAddonDb(
+      input.subscription_id,
+      input.product_id,
+      input.variant_id,
+      input.enabled,
+      DEMO_TODAY,
+    )
+  } catch (err: unknown) {
+    throw new ApiError('INVALID_INPUT', err instanceof Error ? err.message : 'Failed to toggle add-on')
+  }
+}
+
+export async function listCustomers(): Promise<CustomerUser[]> {
+  await sleep(100)
+  return listCustomersDb()
+}
+
+/* ------------------------------------------------------------------ */
+/* Staff team management                                               */
+/* ------------------------------------------------------------------ */
+
+export async function listStaff(): Promise<User[]> {
+  await sleep(120)
+  return listStaffDb()
+}
+
+export async function addStaff(input: AddStaffInput): Promise<User> {
+  await latency()
+  const email = input.email.trim().toLowerCase()
+  if (!input.full_name.trim()) {
+    throw new ApiError('INVALID_INPUT', 'Enter full name for the staff member.')
+  }
+  if (findUserByEmail(email)) {
+    throw new ApiError('EMAIL_TAKEN', 'An account already exists for this email.')
+  }
+  const passwordResult = validatePassword(input.password)
+  if (!passwordResult.valid) {
+    throw new ApiError(
+      'WEAK_PASSWORD',
+      'Password must be 9+ characters with at least one uppercase letter, one lowercase letter and one special character.',
+    )
+  }
+  return insertStaff({
+    email,
+    full_name: input.full_name.trim(),
+    role: input.role,
+    password: input.password,
+  })
+}
+

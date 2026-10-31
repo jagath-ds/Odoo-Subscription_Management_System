@@ -109,6 +109,47 @@ export interface QuotationTemplateInput {
   lines: QuotationTemplateLineInput[]
 }
 
+/* ------------------------------------------------------------------ */
+/* Subscription & staff payloads                                      */
+/* ------------------------------------------------------------------ */
+
+export interface SubscriptionQuery {
+  customer_id?: number
+  status?: string
+  q?: string
+}
+
+export interface CreateFromTemplateInput {
+  template_id: number
+  customer_id: number
+  start_date: DateStr
+  payment_terms_days?: number
+  lines?: {
+    product_id: number
+    variant_id: number | null
+    quantity: number
+  }[]
+}
+
+export interface TransitionSubscriptionInput {
+  id: number
+  target_status: import('@/types/contracts').SubscriptionStatus
+}
+
+export interface ToggleAddonInput {
+  subscription_id: number
+  product_id: number
+  variant_id: number | null
+  enabled: boolean
+}
+
+export interface AddStaffInput {
+  full_name: string
+  email: string
+  password: string
+  role: Role
+}
+
 /**
  * Shape returned by `POST /api/auth/login` and `/api/auth/signup` once the
  * backend is live. The adapter also accepts a bare `SessionUser` so the API
