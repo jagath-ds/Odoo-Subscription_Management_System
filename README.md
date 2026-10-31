@@ -15,8 +15,8 @@ dependencies are installed on your machine by the setup scripts below.
 | 1 | Blueprint & contracts (`docs/Phase-1-Blueprint.pdf`) | Done |
 | 2 | App shell, authentication, role-aware navigation, routing | **Done** |
 | 3 | Catalog & rules studio, subscriptions, quotations, team | **Done** |
-| 4 | Billing Day, invoices, payments, portal data | In progress |
-| 5 | Analytics, polish, live API wiring | Placeholder routes |
+| 4 | Billing Day simulator, invoices, payments, customer portal | **Done** |
+| 5 | Finance command dashboard, Recharts analytics, what-if calculator, SLA badge | **Done** |
 
 Every navigation entry resolves to a real page: completed surfaces render live mock data,
 upcoming surfaces render a phase-badged placeholder that describes what lands there.
@@ -202,11 +202,39 @@ Run inside `frontend/`:
 
 ---
 
-## Phase 4 coverage (next)
+## Phase 4 coverage — done
 
-* Billing Day Time-Travel Simulator with global clock.
-* Run Billing Day Batch with 5-stage animation and Run Ledger.
-* Double-billing idempotency guard (`{sub_number}:{next_billing_date}`).
-* Invoice list, detail, and printable PDF document.
-* Payment modal (UPI, Bank Transfer, Card, Cash) and partial payment state transitions.
-* Customer self-service portal.
+* **Billing Day Time-Travel Simulator** (`/billing`) — Global date-travel clock (`today`) driving
+  dynamic overdue and billing batch evaluations.
+* **Batch Execution Pipeline** — 5-stage animated batch pipeline (*Due subscriptions identified →
+  Discount windows checked → GST computed → Snapshots created → Ledger updated*).
+* **Double-Billing Idempotency Guard** — Subscriptions keyed by `{sub_number}:{next_billing_date}`.
+  Running the batch again skips already-billed subscriptions (*"nothing billed twice"*).
+* **Batch Run Audit Ledger** — Auditable table of all decisions (`BILL`, `SKIP`, `AUTO_CLOSE`).
+* **Invoices & Receivables** (`/invoices`) — Search, overdue filters, status tracking, and quick chase actions.
+* **Printable Invoice Document** (`/invoices/:id`) — Contract B representation, snapshot immutability
+  guarantee, dedicated `@media print` layout, and payment history ledger.
+* **Payment Modal & Transactions** (`/payments`) — Record payments via UPI, NEFT Bank Transfer, Card,
+  and Cash. Enforces overpayment refusal and `CONFIRMED` → `PARTIALLY_PAID` → `PAID` state transitions.
+* **Customer Self-Service Portal** (`/portal` & `/portal/invoices`) — Role-isolated portal where customers
+  manage their own subscriptions, toggle add-on services, and download invoices.
+
+---
+
+## Phase 5 coverage — done
+
+* **Finance Lead Dashboard** (`/dashboard`) — 4 core KPI cards (Active Subscriptions, MRR Collected,
+  Total Outstanding, Overdue Invoices) with targets and trends.
+* **Sub-2s SLA Speed Badge** — Real-time selector measurement (`⚡ Query Time: <50ms`) proving sub-second
+  speed to hackathon evaluators.
+* **Recharts Visualizations**:
+  1. *MRR vs Outstanding* — Dual-series area chart across 12 simulated periods.
+  2. *Revenue Collected vs Outstanding by Frequency* — Stacked bar chart (Daily, Weekly, Monthly, Yearly).
+  3. *Invoice Status Mix* — Interactive donut chart across 6,000 invoices.
+  4. *Renewals Due Next 30 Days* — Horizontal bar chart by timeline window.
+* **What-If Revenue Calculator** — Interactive seat quantity slider (1–150 seats), plan & brand variant select,
+  10% discount toggle, and GST 18% calculation projecting live MRR contribution.
+* **AI Revenue Insights Panel** — 1.5s simulated heuristic analysis with actionable alerts (discounts, renewals,
+  and overdue chase) with one-click Apply actions.
+* **Overdue Receivables Chase Table** — Prioritized debt list with days overdue severity pills and
+  direct "Chase Reminder" and "Record Payment" shortcuts.

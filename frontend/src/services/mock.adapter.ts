@@ -20,6 +20,26 @@ import type {
 import { roundMoney } from '@/lib/format'
 import { validatePassword } from '@/lib/validation'
 import {
+  cancelInvoice as cancelInvoiceDb,
+  confirmInvoice as confirmInvoiceDb,
+  getAnalyticsSummary as getAnalyticsSummaryDb,
+  getInvoice as getInvoiceDb,
+  listInvoices as listInvoicesDb,
+  listPayments as listPaymentsDb,
+  recordPayment as recordPaymentDb,
+  runBillingDayBatch as runBillingDayBatchDb,
+  type RecordPaymentInput,
+} from '@/mocks/invoiceDb'
+import type {
+  BillingRunReport,
+} from '@/mocks/invoices.fixtures'
+import type {
+  AnalyticsSummary,
+  InvoiceDetail,
+  InvoiceListItem,
+  PaymentListItem,
+} from '@/types/contracts'
+import {
   deleteDiscountRule as deleteDiscountRuleRecord,
   deletePlan as deletePlanRecord,
   deleteProduct as deleteProductRecord,
@@ -668,4 +688,74 @@ export async function addStaff(input: AddStaffInput): Promise<User> {
     password: input.password,
   })
 }
+
+/* ------------------------------------------------------------------ */
+/* Invoices, Billing Day & Payments (Phase 4 & 5)                     */
+/* ------------------------------------------------------------------ */
+
+export async function listInvoices(query?: {
+  status?: string
+  is_overdue?: boolean
+  q?: string
+}): Promise<InvoiceListItem[]> {
+  await sleep(150)
+  return listInvoicesDb(query, DEMO_TODAY)
+}
+
+export async function getInvoice(id: number): Promise<InvoiceDetail> {
+  await latency()
+  const detail = getInvoiceDb(id, DEMO_TODAY)
+  if (!detail) throw new ApiError('NOT_FOUND', 'Invoice not found.')
+  return detail
+}
+
+export async function recordPayment(input: RecordPaymentInput): Promise<InvoiceDetail> {
+  await latency()
+  try {
+    return recordPaymentDb(input)
+  } catch (err: unknown) {
+    throw new ApiError('INVALID_INPUT', err instanceof Error ? err.message : 'Failed to record payment')
+  }
+}
+
+export async function confirmInvoice(id: number): Promise<InvoiceDetail> {
+  await latency()
+  return confirmInvoiceDb(id)
+}
+
+export async function cancelInvoice(id: number): Promise<InvoiceDetail> {
+  await latency()
+  return cancelInvoiceDb(id)
+}
+
+export async function sendInvoice(id: number): Promise<InvoiceDetail> {
+  await latency()
+  const inv = getInvoiceDb(id, DEMO_TODAY)
+  if (!inv) throw new ApiError('NOT_FOUND', 'Invoice not found.')
+  return inv
+}
+
+export async function sendReminder(
+  invoiceId: number,
+): Promise<{ sent: true; to: string }> {
+  await latency()
+  const inv = getInvoiceDb(invoiceId, DEMO_TODAY)
+  return { sent: true, to: inv?.customer_name ?? 'customer@brightloop.in' }
+}
+
+export async function listPayments(): Promise<PaymentListItem[]> {
+  await sleep(120)
+  return listPaymentsDb()
+}
+
+export async function runBillingDay(todayStr: string = DEMO_TODAY): Promise<BillingRunReport> {
+  await sleep(350)
+  return runBillingDayBatchDb(todayStr)
+}
+
+export async function getAnalyticsSummary(todayStr: string = DEMO_TODAY): Promise<AnalyticsSummary> {
+  await sleep(60)
+  return getAnalyticsSummaryDb(todayStr)
+}
+
 

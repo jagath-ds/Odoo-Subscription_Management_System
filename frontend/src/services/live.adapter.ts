@@ -1,7 +1,11 @@
 import type {
+  AnalyticsSummary,
   AppNotification,
   DemoAccount,
   DiscountRule,
+  InvoiceDetail,
+  InvoiceListItem,
+  PaymentListItem,
   Plan,
   Product,
   ProductVariant,
@@ -16,6 +20,8 @@ import type {
   User,
 } from '@/types/contracts'
 import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
+import type { BillingRunReport } from '@/mocks/invoices.fixtures'
+import type { RecordPaymentInput } from '@/mocks/invoiceDb'
 import {
   ApiError,
   type AddStaffInput,
@@ -383,4 +389,70 @@ export async function addStaff(input: AddStaffInput): Promise<User> {
     body: JSON.stringify(input),
   })
 }
+
+/* ------------------------------------------------------------------ */
+/* Invoices, Billing Day & Payments (Phase 4 & 5 - Member 4 endpoints)*/
+/* ------------------------------------------------------------------ */
+
+export async function listInvoices(query?: {
+  status?: string
+  is_overdue?: boolean
+  q?: string
+}): Promise<InvoiceListItem[]> {
+  const params = new URLSearchParams()
+  if (query?.status) params.set('status', query.status)
+  if (query?.is_overdue !== undefined) params.set('is_overdue', String(query.is_overdue))
+  if (query?.q) params.set('q', query.q)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  return request<InvoiceListItem[]>(`/api/invoices${qs}`)
+}
+
+export async function getInvoice(id: number): Promise<InvoiceDetail> {
+  // Member 4: Connects to Contract B GET /api/invoices/{id}
+  return request<InvoiceDetail>(`/api/invoices/${id}`)
+}
+
+export async function recordPayment(input: RecordPaymentInput): Promise<InvoiceDetail> {
+  // Member 4: Connects to POST /api/payments
+  return request<InvoiceDetail>('/api/payments', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function confirmInvoice(id: number): Promise<InvoiceDetail> {
+  return request<InvoiceDetail>(`/api/invoices/${id}/confirm`, { method: 'POST' })
+}
+
+export async function cancelInvoice(id: number): Promise<InvoiceDetail> {
+  return request<InvoiceDetail>(`/api/invoices/${id}/cancel`, { method: 'POST' })
+}
+
+export async function sendInvoice(id: number): Promise<InvoiceDetail> {
+  return request<InvoiceDetail>(`/api/invoices/${id}/send`, { method: 'POST' })
+}
+
+export async function sendReminder(invoiceId: number): Promise<{ sent: true; to: string }> {
+  return request<{ sent: true; to: string }>(`/api/invoices/${invoiceId}/remind`, { method: 'POST' })
+}
+
+export async function listPayments(): Promise<PaymentListItem[]> {
+  // Member 4: Connects to GET /api/payments
+  return request<PaymentListItem[]>('/api/payments')
+}
+
+export async function runBillingDay(todayStr?: string): Promise<BillingRunReport> {
+  // Member 4: Connects to POST /api/billing/batch
+  return request<BillingRunReport>('/api/billing/batch', {
+    method: 'POST',
+    body: JSON.stringify({ today: todayStr }),
+  })
+}
+
+export async function getAnalyticsSummary(todayStr?: string): Promise<AnalyticsSummary> {
+  // Member 4: Connects to Contract C GET /api/analytics/summary
+  const qs = todayStr ? `?today=${todayStr}` : ''
+  return request<AnalyticsSummary>(`/api/analytics/summary${qs}`)
+}
+
 

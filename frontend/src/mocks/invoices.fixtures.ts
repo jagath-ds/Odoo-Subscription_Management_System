@@ -1,0 +1,280 @@
+import type {
+  InvoiceDetail,
+  PaymentListItem,
+} from '@/types/contracts'
+
+export interface BillingRunDecision {
+  sub_number: string
+  customer_name: string
+  action: 'BILL' | 'SKIP' | 'AUTO_CLOSE'
+  period_key: string
+  amount: number
+  reason: string
+}
+
+export interface BillingRunReport {
+  ran_at: string
+  today: string
+  billed: number
+  skipped: number
+  auto_closed: number
+  total_amount: number
+  decisions: BillingRunDecision[]
+  duration_ms: number
+}
+
+export const SEED_INVOICE_DETAILS: InvoiceDetail[] = [
+  {
+    id: 1,
+    invoice_number: 'INV-2026-0412',
+    subscription_id: 1,
+    sub_number: 'SUB-2026-0001',
+    customer_name: 'Meridian Labs (Vikram Joshi)',
+    billing_period_key: 'SUB-2026-0001:2026-10-01',
+    status: 'CONFIRMED',
+    issue_date: '2026-10-01',
+    due_date: '2026-10-15',
+    is_overdue: true,
+    subtotal: 52200,
+    total_discount: 4500,
+    total_tax: 8586,
+    grand_total: 56286,
+    amount_paid: 0,
+    amount_due: 56286,
+    lines: [
+      {
+        product_name_snapshot: 'Brightloop Core Platform',
+        variant_name_snapshot: null,
+        quantity: 10,
+        unit_price_snapshot: 4500,
+        discount_amount: 4500,
+        tax_percent_snapshot: 18,
+        tax_amount: 7290,
+        line_total: 47790,
+      },
+      {
+        product_name_snapshot: 'WhatsApp Notification Pack',
+        variant_name_snapshot: 'Volume: 10,000 messages',
+        quantity: 2,
+        unit_price_snapshot: 3600,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 1296,
+        line_total: 8496,
+      },
+    ],
+    payments: [],
+  },
+  {
+    id: 2,
+    invoice_number: 'INV-2026-0388',
+    subscription_id: 2,
+    sub_number: 'SUB-2026-0002',
+    customer_name: 'Nova Retail (Deepa Shah)',
+    billing_period_key: 'SUB-2026-0002:2026-01-15',
+    status: 'PARTIALLY_PAID',
+    issue_date: '2026-09-15',
+    due_date: '2026-10-15',
+    is_overdue: true,
+    subtotal: 111120,
+    total_discount: 10872,
+    total_tax: 18044.64,
+    grand_total: 118292.64,
+    amount_paid: 50000,
+    amount_due: 68292.64,
+    lines: [
+      {
+        product_name_snapshot: 'Odoo ERP License',
+        variant_name_snapshot: 'Brand: Enterprise',
+        quantity: 12,
+        unit_price_snapshot: 9060,
+        discount_amount: 10872,
+        tax_percent_snapshot: 18,
+        tax_amount: 17612.64,
+        line_total: 115460.64,
+      },
+      {
+        product_name_snapshot: 'Priority Support',
+        variant_name_snapshot: null,
+        quantity: 1,
+        unit_price_snapshot: 2400,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 432,
+        line_total: 2832,
+      },
+    ],
+    payments: [
+      {
+        id: 1,
+        payment_method: 'BANK_TRANSFER',
+        amount: 50000,
+        payment_date: '2026-10-10',
+        note: 'Initial wire transfer part 1 - REF: HDFC882910',
+      },
+    ],
+  },
+  {
+    id: 3,
+    invoice_number: 'INV-2026-0420',
+    subscription_id: 7,
+    sub_number: 'SUB-2026-0007',
+    customer_name: 'Priya Nair (Demo Customer)',
+    billing_period_key: 'SUB-2026-0007:2026-10-02',
+    status: 'PAID',
+    issue_date: '2026-10-02',
+    due_date: '2026-10-17',
+    is_overdue: false,
+    subtotal: 24900,
+    total_discount: 0,
+    total_tax: 4482,
+    grand_total: 29382,
+    amount_paid: 29382,
+    amount_due: 0,
+    lines: [
+      {
+        product_name_snapshot: 'Brightloop Core Platform',
+        variant_name_snapshot: null,
+        quantity: 5,
+        unit_price_snapshot: 4500,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 4050,
+        line_total: 26550,
+      },
+      {
+        product_name_snapshot: 'Priority Support',
+        variant_name_snapshot: null,
+        quantity: 1,
+        unit_price_snapshot: 2400,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 432,
+        line_total: 2832,
+      },
+    ],
+    payments: [
+      {
+        id: 2,
+        payment_method: 'UPI',
+        amount: 29382,
+        payment_date: '2026-10-03',
+        note: 'UPI Payment - UPI ID: priya@okaxis',
+      },
+    ],
+  },
+  {
+    id: 4,
+    invoice_number: 'INV-2026-0425',
+    subscription_id: 3,
+    sub_number: 'SUB-2026-0003',
+    customer_name: 'Zenith Logistics (Rohit Verma)',
+    billing_period_key: 'SUB-2026-0003:2026-10-10',
+    status: 'CONFIRMED',
+    issue_date: '2026-10-10',
+    due_date: '2026-10-25',
+    is_overdue: true,
+    subtotal: 13500,
+    total_discount: 0,
+    total_tax: 2430,
+    grand_total: 15930,
+    amount_paid: 0,
+    amount_due: 15930,
+    lines: [
+      {
+        product_name_snapshot: 'Brightloop Core Platform',
+        variant_name_snapshot: null,
+        quantity: 3,
+        unit_price_snapshot: 4500,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 2430,
+        line_total: 15930,
+      },
+    ],
+    payments: [],
+  },
+  {
+    id: 5,
+    invoice_number: 'INV-2026-0430',
+    subscription_id: 8,
+    sub_number: 'SUB-2026-0008',
+    customer_name: 'Priya Nair (Demo Customer)',
+    billing_period_key: 'SUB-2026-0008:2026-10-25',
+    status: 'DRAFT',
+    issue_date: '2026-10-25',
+    due_date: '2026-11-01',
+    is_overdue: false,
+    subtotal: 1200,
+    total_discount: 0,
+    total_tax: 216,
+    grand_total: 1416,
+    amount_paid: 0,
+    amount_due: 1416,
+    lines: [
+      {
+        product_name_snapshot: 'WhatsApp Notification Pack',
+        variant_name_snapshot: 'Volume: 1,000 messages',
+        quantity: 1,
+        unit_price_snapshot: 1200,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 216,
+        line_total: 1416,
+      },
+    ],
+    payments: [],
+  },
+  {
+    id: 6,
+    invoice_number: 'INV-2026-0350',
+    subscription_id: 6,
+    sub_number: 'SUB-2026-0006',
+    customer_name: 'Solaris Systems (Arjun Das)',
+    billing_period_key: 'SUB-2026-0006:2026-10-01',
+    status: 'CANCELLED',
+    issue_date: '2026-10-01',
+    due_date: '2026-10-08',
+    is_overdue: false,
+    subtotal: 4500,
+    total_discount: 0,
+    total_tax: 810,
+    grand_total: 5310,
+    amount_paid: 0,
+    amount_due: 0,
+    lines: [
+      {
+        product_name_snapshot: 'Brightloop Core Platform',
+        variant_name_snapshot: null,
+        quantity: 1,
+        unit_price_snapshot: 4500,
+        discount_amount: 0,
+        tax_percent_snapshot: 18,
+        tax_amount: 810,
+        line_total: 5310,
+      },
+    ],
+    payments: [],
+  },
+]
+
+export const SEED_PAYMENTS: PaymentListItem[] = [
+  {
+    id: 1,
+    invoice_number: 'INV-2026-0388',
+    customer_name: 'Nova Retail (Deepa Shah)',
+    payment_method: 'BANK_TRANSFER',
+    amount: 50000,
+    payment_date: '2026-10-10',
+    note: 'Initial wire transfer part 1 - REF: HDFC882910',
+  },
+  {
+    id: 2,
+    invoice_number: 'INV-2026-0420',
+    customer_name: 'Priya Nair (Demo Customer)',
+    payment_method: 'UPI',
+    amount: 29382,
+    payment_date: '2026-10-03',
+    note: 'UPI Payment - UPI ID: priya@okaxis',
+  },
+]

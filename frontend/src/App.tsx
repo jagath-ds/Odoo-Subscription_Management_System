@@ -13,12 +13,10 @@ import {
   TaxRulesPage,
 } from '@/pages/catalog'
 import { ForbiddenPage, NotFoundPage } from '@/pages/errors'
-import {
-  BillingDayPage,
-  InvoiceDetailPage,
-  InvoicesPage,
-  PaymentsPage,
-} from '@/pages/placeholders'
+import { BillingDayPage } from '@/pages/BillingDayPage'
+import { InvoicesPage } from '@/pages/InvoicesPage'
+import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage'
+import { PaymentsPage } from '@/pages/PaymentsPage'
 import { SubscriptionsPage } from '@/pages/SubscriptionsPage'
 import { SubscriptionDetailPage } from '@/pages/SubscriptionDetailPage'
 import { NewQuotationPage } from '@/pages/NewQuotationPage'

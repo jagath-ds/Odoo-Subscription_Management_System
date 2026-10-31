@@ -6,9 +6,13 @@
  * component changes.
  */
 import type {
+  AnalyticsSummary,
   AppNotification,
   DemoAccount,
   DiscountRule,
+  InvoiceDetail,
+  InvoiceListItem,
+  PaymentListItem,
   Plan,
   Product,
   ProductVariant,
@@ -23,6 +27,8 @@ import type {
   User,
 } from '@/types/contracts'
 import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
+import type { BillingRunReport } from '@/mocks/invoices.fixtures'
+import type { RecordPaymentInput } from '@/mocks/invoiceDb'
 import * as live from './live.adapter'
 import * as mock from './mock.adapter'
 import type {
@@ -270,4 +276,53 @@ export function listStaff(): Promise<User[]> {
 export function addStaff(input: AddStaffInput): Promise<User> {
   return route(() => mock.addStaff(input), () => live.addStaff(input))
 }
+
+/* ------------------------------------------------------------------ */
+/* Invoices, Billing Day & Payments (Phase 4 & 5)                     */
+/* ------------------------------------------------------------------ */
+
+export function listInvoices(query?: {
+  status?: string
+  is_overdue?: boolean
+  q?: string
+}): Promise<InvoiceListItem[]> {
+  return route(() => mock.listInvoices(query), () => live.listInvoices(query))
+}
+
+export function getInvoice(id: number): Promise<InvoiceDetail> {
+  return route(() => mock.getInvoice(id), () => live.getInvoice(id))
+}
+
+export function recordPayment(input: RecordPaymentInput): Promise<InvoiceDetail> {
+  return route(() => mock.recordPayment(input), () => live.recordPayment(input))
+}
+
+export function confirmInvoice(id: number): Promise<InvoiceDetail> {
+  return route(() => mock.confirmInvoice(id), () => live.confirmInvoice(id))
+}
+
+export function cancelInvoice(id: number): Promise<InvoiceDetail> {
+  return route(() => mock.cancelInvoice(id), () => live.cancelInvoice(id))
+}
+
+export function sendInvoice(id: number): Promise<InvoiceDetail> {
+  return route(() => mock.sendInvoice(id), () => live.sendInvoice(id))
+}
+
+export function sendReminder(invoiceId: number): Promise<{ sent: true; to: string }> {
+  return route(() => mock.sendReminder(invoiceId), () => live.sendReminder(invoiceId))
+}
+
+export function listPayments(): Promise<PaymentListItem[]> {
+  return route(() => mock.listPayments(), () => live.listPayments())
+}
+
+export function runBillingDay(todayStr?: string): Promise<BillingRunReport> {
+  return route(() => mock.runBillingDay(todayStr), () => live.runBillingDay(todayStr))
+}
+
+export function getAnalyticsSummary(todayStr?: string): Promise<AnalyticsSummary> {
+  return route(() => mock.getAnalyticsSummary(todayStr), () => live.getAnalyticsSummary(todayStr))
+}
+
 
