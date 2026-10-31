@@ -58,6 +58,16 @@ The app runs at **http://127.0.0.1:5173**.
 **Prerequisites:** Node.js **22 LTS or newer** (Vite 8 + the `cn` class-merge package require it)
 and npm 10+. Check with `node -v`.
 
+### Sharing with teammates
+
+* **No Python venv here.** This is a Node app: dependencies install into `frontend/node_modules`
+  (project-local, git-ignored) when you run `setup.cmd`. Nothing is installed globally.
+* **No `requirements.txt` here.** The equivalents are `frontend/package.json` (what we depend on)
+  and `frontend/package-lock.json` (exact pinned versions, used by `npm ci`). The Python backend
+  will carry its own `.venv` and `backend/requirements.txt` when it is added to this repo.
+* Read **[docs/TEAM-GUIDE.md](docs/TEAM-GUIDE.md)** for a folder map, how to add a page, how to add
+  an API call, conventions, git workflow and troubleshooting.
+
 ---
 
 ## Demo accounts

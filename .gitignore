@@ -26,3 +26,11 @@ Thumbs.db
 
 # Test / coverage
 coverage/
+
+# Python backend (when it lands in backend/)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
