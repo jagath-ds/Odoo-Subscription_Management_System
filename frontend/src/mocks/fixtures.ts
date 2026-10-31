@@ -11,7 +11,7 @@ function localToday(): DateStr {
 export const DEMO_TODAY: DateStr =
   (import.meta.env.VITE_USE_MOCK ?? 'false') === 'true' ? '2026-10-31' : localToday()
 
-export const DEMO_PASSWORD = 'Brightloop#2026'
+export const DEMO_PASSWORD = 'Brightloop@123'
 
 export interface DemoUser extends SessionUser {
   password: string
@@ -22,7 +22,7 @@ export interface DemoUser extends SessionUser {
 export const DEMO_USERS: DemoUser[] = [
   {
     id: 1,
-    email: 'admin@brightloop.in',
+    email: 'admin@brightloop.local',
     full_name: 'Ananya Rao',
     role: 'ADMIN',
     password: DEMO_PASSWORD,
@@ -31,7 +31,7 @@ export const DEMO_USERS: DemoUser[] = [
   },
   {
     id: 2,
-    email: 'staff@brightloop.in',
+    email: 'staff@brightloop.local',
     full_name: 'Karan Mehta',
     role: 'STAFF',
     password: DEMO_PASSWORD,
@@ -40,7 +40,7 @@ export const DEMO_USERS: DemoUser[] = [
   },
   {
     id: 3,
-    email: 'customer@brightloop.in',
+    email: 'customer@brightloop.local',
     full_name: 'Priya Nair',
     role: 'CUSTOMER',
     password: DEMO_PASSWORD,
@@ -54,21 +54,21 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'ADMIN',
     label: 'Finance Lead',
     full_name: 'Ananya Rao',
-    email: 'admin@brightloop.in',
+    email: 'admin@brightloop.local',
     password: DEMO_PASSWORD,
   },
   {
     role: 'STAFF',
     label: 'Staff Operations',
     full_name: 'Karan Mehta',
-    email: 'staff@brightloop.in',
+    email: 'staff@brightloop.local',
     password: DEMO_PASSWORD,
   },
   {
     role: 'CUSTOMER',
     label: 'Customer Portal',
     full_name: 'Priya Nair',
-    email: 'customer@brightloop.in',
+    email: 'customer@brightloop.local',
     password: DEMO_PASSWORD,
   },
 ]

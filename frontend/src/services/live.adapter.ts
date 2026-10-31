@@ -21,6 +21,7 @@ import type {
 } from '@/types/contracts'
 import type { CustomerUser } from '@/mocks/subscriptions.fixtures'
 import type { BillingRunReport } from '@/mocks/invoices.fixtures'
+import { DEMO_ACCOUNTS } from '@/mocks/fixtures'
 import type { RecordPaymentInput } from '@/mocks/invoiceDb'
 import {
   ApiError,
@@ -170,7 +171,8 @@ export async function resetPassword(input: ResetPasswordInput): Promise<SessionU
 }
 
 export async function getDemoAccounts(): Promise<DemoAccount[]> {
-  return []
+  // Accounts created by `python -m backend.seed`.
+  return DEMO_ACCOUNTS.map((account) => ({ ...account }))
 }
 
 export async function listNotifications(): Promise<AppNotification[]> {

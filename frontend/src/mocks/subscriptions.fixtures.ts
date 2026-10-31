@@ -8,7 +8,7 @@ export interface CustomerUser {
 }
 
 export const SEED_CUSTOMERS: CustomerUser[] = [
-  { id: 3, full_name: 'Priya Nair', email: 'customer@brightloop.in', company: 'Nair Technologies' },
+  { id: 3, full_name: 'Priya Nair', email: 'customer@brightloop.local', company: 'Nair Technologies' },
   { id: 10, full_name: 'Vikram Joshi', email: 'vikram@meridianlabs.in', company: 'Meridian Labs' },
   { id: 11, full_name: 'Deepa Shah', email: 'deepa@novaretail.com', company: 'Nova Retail' },
   { id: 12, full_name: 'Rohit Verma', email: 'rohit@zenithlogistics.in', company: 'Zenith Logistics' },

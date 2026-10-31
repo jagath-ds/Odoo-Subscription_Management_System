@@ -749,7 +749,7 @@ export async function sendReminder(
 ): Promise<{ sent: true; to: string }> {
   await latency()
   const inv = getInvoiceDb(invoiceId, DEMO_TODAY)
-  return { sent: true, to: inv?.customer_name ?? 'customer@brightloop.in' }
+  return { sent: true, to: inv?.customer_name ?? 'customer@brightloop.local' }
 }
 
 export async function listPayments(): Promise<PaymentListItem[]> {

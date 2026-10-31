@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useApp } from '@/mocks/store/AppStore'
+import { DEMO_ACCOUNTS } from '@/mocks/fixtures'
 import { ApiError, getDemoAccounts, login } from '@/services/api'
 import type { DemoAccount } from '@/types/contracts'
 import { homeForRole } from '@/types/nav'
@@ -22,8 +23,8 @@ export function LoginPage() {
   const { state, dispatch } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('admin@brightloop.in')
-  const [password, setPassword] = useState('Brightloop#2026')
+  const [email, setEmail] = useState(DEMO_ACCOUNTS[0]?.email ?? '')
+  const [password, setPassword] = useState(DEMO_ACCOUNTS[0]?.password ?? '')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
